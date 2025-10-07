@@ -1,0 +1,12 @@
+[project]
+name = "app"
+version = "0.1.0"
+description = "Vision-language modeling"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.3.3",
+    "pandas>=2.3.3",
+    "scikit-learn>=1.7.2",
+    "torch>=2.8.0",
+    "torchvision>=0.23.0",
+]
