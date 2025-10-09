@@ -1,0 +1,7 @@
+ant: https://my.clevelandclinic.org/health/diseases/22943-ant-bites
+bed bug: https://my.clevelandclinic.org/health/diseases/17847-bedbugs
+chigger: https://my.clevelandclinic.org/health/diseases/23267-chigger-bites
+flea: https://my.clevelandclinic.org/health/diseases/21718-flea-bites
+mosquito: https://my.clevelandclinic.org/health/diseases/17695-mosquito-bites
+spider: https://my.clevelandclinic.org/health/diseases/16639-spider-bites
+tick: https://my.clevelandclinic.org/health/diseases/7234-tick-bites
