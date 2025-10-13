@@ -1,0 +1,107 @@
+{
+    "ants": {
+        "common": [
+        "Sharp pinch or sting at the bite site",
+        "Burning sensation at the bite site",
+        "Itching at the bite site",
+        "Mild pain or discomfort"
+        ],
+        "rare": [
+        "Itchiness all over the body",
+        "Abdominal discomfort or nausea",
+        "Tightness in the chest or difficulty breathing",
+        "Dizziness or lightheadedness",
+        "Intense pain from severe stings"
+        ]
+    },
+    "mosquitoes": {
+        "common": [
+        "Itching at the bite site",
+        "Irritation or mild discomfort"
+        ],
+        "rare": [
+        "Faintness or dizziness",
+        "Wheezing or tightness in the throat",
+        "Fever, headache, or body aches",
+        "Nausea",
+        "Eye irritation",
+        "Tiredness"
+        ]
+    },
+    "bed_bugs": {
+        "common": [
+        "Itchiness at the bite site",
+        "Mild burning sensation",
+        "Mild pain or discomfort"
+        ],
+        "rare": [
+        "Difficulty breathing",
+        "Anxiety or restlessness",
+        "Insomnia or difficulty sleeping",
+        "Swollen tongue",
+        "Fever",
+        "Irregular heartbeat",
+        "Feeling extremely sick",
+        "Painful or severe systemic reactions"
+        ]
+    },
+    "chiggers": {
+        "common": [
+        "Severe itching at the bite site",
+        "Irritation or discomfort in areas where clothing is tight"
+        ],
+        "rare": [
+        "Intense irritation or secondary infection from scratching"
+        ]
+    },
+    "fleas": {
+        "common": [
+        "Itching at the bite site",
+        "Irritation or mild discomfort"
+        ],
+        "rare": [
+        "Shortness of breath or wheezing",
+        "Fever",
+        "Headache",
+        "Body aches",
+        "Nausea or abdominal pain",
+        "Dizziness or weakness",
+        "Weight loss"
+        ]
+    },
+    "ticks": {
+        "common": [
+        "Itchiness or mild irritation at the bite site",
+        "Mild discomfort or tenderness"
+        ],
+        "rare": [
+        "Fever",
+        "Chills",
+        "Muscle pain",
+        "Headaches",
+        "Tiredness or fatigue",
+        "Nausea or vomiting",
+        "Swollen lymph nodes",
+        "Allergic reaction after eating red meat"
+        ]
+    },
+    "spiders": {
+        "common": [
+        "Sharp, pinprick-like pain at the bite site",
+        "Numbness at the bite site",
+        "Mild pain or tenderness",
+        "Fatigue or tiredness",
+        "Headache"
+        ],
+        "rare": [
+        "Difficulty breathing",
+        "Droopy or swollen eyes",
+        "Nausea and vomiting",
+        "Painful muscle cramps or stiffness",
+        "Increased saliva production",
+        "Itchy skin sensation",
+        "Cognitive impairment or memory problems",
+        "Heart issues or high blood pressure"
+        ]
+    }
+}
