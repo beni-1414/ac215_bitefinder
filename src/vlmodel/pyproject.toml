@@ -4,9 +4,13 @@ version = "0.1.0"
 description = "Vision-language modeling"
 requires-python = ">=3.12"
 dependencies = [
+    "matplotlib>=3.10.7",
     "numpy>=2.3.3",
+    "openai>=2.3.0",
     "pandas>=2.3.3",
     "scikit-learn>=1.7.2",
     "torch>=2.8.0",
     "torchvision>=0.23.0",
+    "tqdm>=4.67.1",
+    "transformers>=4.57.0",
 ]
