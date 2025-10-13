@@ -1,0 +1,13 @@
+# ----------------------------
+# python
+# ----------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.env
+.venv/
+venv/
+.envrc
+.DS_Store
