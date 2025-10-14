@@ -5,6 +5,8 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 from prompt import build_prompt
+from google.cloud import storage
+
 
 # Load environment variables
 # Try to load from relative path first (for local development)
@@ -82,3 +84,32 @@ with open(output_file, "w") as f:
     json.dump(results, f, indent=2)
 
 print(f"\n✅ All synthetic labels generated and saved to {output_file}")
+
+# Create an aggregate file with all sentences, structure {insect : [list of sentences]}
+aggregate = {}
+for category, entries in results.items():
+    all_sentences = []
+    for entry in entries:
+        all_sentences.extend(entry["sentences"])
+    aggregate[category] = all_sentences
+aggregate_file = os.path.join(output_dir, "synthetic_bite_labels_aggregate.json")
+with open(aggregate_file, "w") as f:
+    json.dump(aggregate, f, indent=2)
+
+# Upload to Google Cloud Storage if GCP_BUCKET_NAME is set
+gcp_bucket_name = os.getenv("GCP_BUCKET_NAME")
+gcp_project = os.getenv("GCP_PROJECT")
+if gcp_bucket_name and gcp_project:
+    try:
+        storage_client = storage.Client(project=gcp_project)
+        bucket = storage_client.bucket(gcp_bucket_name)
+
+        blob = bucket.blob("synthetic_bite_labels.json")
+        blob.upload_from_filename(output_file)
+
+        # Upload aggregate file as well
+        aggregate_blob = bucket.blob("synthetic_bite_labels_aggregate.json")
+        aggregate_blob.upload_from_filename(aggregate_file)
+        print(f"✅ Uploaded {output_file} to GCP bucket {gcp_bucket_name}")
+    except Exception as e:
+        print(f"⚠️ Failed to upload to GCP: {e}")
