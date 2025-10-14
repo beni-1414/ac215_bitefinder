@@ -38,9 +38,6 @@ for category, locations in locations_data.items():
 
     # Process locations in batches of up to 5
     for i in range(0, len(locations), 5):
-        # For testing, only process two batches per category
-        if i >= 10:
-            break
         batch = locations[i:i+5]
 
         # Randomly pick one rare symptom if needed
@@ -75,7 +72,6 @@ for category, locations in locations_data.items():
 
         # Sleep a bit to avoid rate limiting
         time.sleep(1.5)
-        print(batch_json)
 
 # Save final results
 # Use output directory if it exists (for containerized environment)
