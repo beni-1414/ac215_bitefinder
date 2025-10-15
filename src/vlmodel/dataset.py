@@ -5,7 +5,6 @@ import os
 import torch
 from torch.utils.data import random_split
 import json
-# from google.cloud import storage
 
 '''
 Assumes the following directory structure:

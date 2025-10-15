@@ -3,7 +3,7 @@ import torch.optim as optim
 from trainer import Trainer
 from model import CLIPForBugBiteClassification, ViLTForBugBiteClassification
 from dataset import BugBitePairedDataset, train_eval_split, collate_paired_fn
-from save_utils import *
+from utils_save import *
 
 seed = 42
 
