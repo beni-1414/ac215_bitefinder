@@ -26,21 +26,10 @@ This directory contains a containerized version of the synthetic bite label gene
 
 - `Dockerfile` - Docker image configuration using uv
 - `docker-shell.sh` - Shell script for Linux/Mac to build and run the container  
-- `docker-shell.bat` - Batch script for Windows to build and run the container
 - `pyproject.toml` - Python project configuration and dependencies
 - `uv.lock` - Locked dependency versions for reproducible builds
 
 ### Usage
-
-**Linux/Mac:**
-```bash
-./docker-shell.sh
-```
-
-**Windows:**
-```cmd
-docker-shell.bat
-```
 
 **Manual Docker Commands:**
 ```bash
@@ -49,34 +38,20 @@ docker build -t synthetic-label-generation .
 docker run --rm -it -v "$(pwd):/app" --env-file ../../../.env synthetic-label-generation
 ```
 
+>You can also run the docker-shell.sh file.
+
+### Secrets
+We had some issues with mounting the secrets file at runtime inside the container. For that reason, we choose the following tmp approach until we fix it:
+
+>create a secrets/ folder inside the synthetic_label_generation app and paste the secrets in there, so they can be copied into the image.
+
 ### Environment Variables
 
 Make sure your `.env` file (located at the repository root) contains:
 ```
 OPENAI_API_KEY=your_openai_api_key_here
-```
 
-### Development
-
-**Inside the container:**
-Once inside the container shell, you MUST use `uv run` to activate the virtual environment:
-```bash
-# ✅ Correct - uses uv's virtual environment
-uv run label_generation.py
-
-# ❌ Wrong - will give "ModuleNotFoundError"
-python label_generation.py
-```
-
-**Alternative inside container:**
-```bash
-# Manually activate the virtual environment
-source .venv/bin/activate
-python label_generation.py
-```
-
-**Local development:**
-```bash
-uv sync
-uv run label_generation.py
+GCP_PROJECT=bitefinder-474614
+GCP_BUCKET_NAME=bitefinder-data
+GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/bitefinder-service-account.json
 ```

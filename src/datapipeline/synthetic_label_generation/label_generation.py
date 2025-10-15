@@ -4,6 +4,9 @@ import time
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+from prompt import build_prompt
+from google.cloud import storage
+
 
 # Load environment variables
 # Try to load from relative path first (for local development)
@@ -37,60 +40,13 @@ for category, locations in locations_data.items():
 
     # Process locations in batches of up to 5
     for i in range(0, len(locations), 5):
-        # For testing, only process two batches per category
-        if i >= 10:
-            break
         batch = locations[i:i+5]
 
         # Randomly pick one rare symptom if needed
         selected_rare = random.choice(rare_symptoms)
 
         # Build the dynamic prompt
-        prompt = f"""
-You are generating synthetic patient-style descriptions of insect bites for training a vision language model.
-
-Context:
-- Locations: {', '.join(batch)}
-- Common symptoms: {', '.join(common_symptoms)}
-- Rare symptoms (optional): {selected_rare}
-- The biting insect type corresponds to the category: {category}.
-
-Instructions:
-- For each location, create 4 short paraphrased sentences that sound like what a *patient might say* when describing their bite. They will be prompted to answer "Can you describe where you think you were bitten and what symptoms you are experiencing?"
-- Never mention the insect type explicitly.
-- Do not mention specific body parts as they are not provided in the metadata, just use the location context.
-- Include uncertainty or lack of knowledge about the bite origin in some sentences.
-- Sentences should sound natural and vary in tone and technical detail:
-  - Some should use medical terms (e.g., "erythema" instead of "redness")
-  - Most of them should be more casual (e.g., "bite got really itchy and swollen").
-  - Some can be very brief (e.g., "Got bitten while hiking, itchy").
-  - Some can be more elaborate (e.g., "I was camping in a forest and woke up with several itchy bumps, not sure what bit me").
-- Always include common symptoms to some extent, no need to include all.
-- Include the rare symptom naturally into *one* of the sentences.
-- Return the result in JSON format with this structure:
-
-{{
-  "location_1": [
-    "sentence1",
-    "sentence2",
-    "sentence3",
-    "sentence4"
-    ],
-    "location_2": [
-    "sentence1",
-    "sentence2",
-    "sentence3",
-    "sentence4"
-    ]...
-}}
-
-EXAMPLES:
-- I was running through a dense forest, itchy bump.
-- Lots of very itchy warm bumps, no idea where I got them. I am travelling and sleeping in a hostel.
-- I think I got bitten while hiking in the mountains, bite is itchy.
-- I do not know where I got bitten, just woke up with the bites.
-etc.
-"""
+        prompt = build_prompt(batch, common_symptoms, selected_rare, category)
         # Send request
         try:
             response = client.chat.completions.create(
@@ -118,7 +74,6 @@ etc.
 
         # Sleep a bit to avoid rate limiting
         time.sleep(1.5)
-        print(batch_json)
 
 # Save final results
 # Use output directory if it exists (for containerized environment)
@@ -129,3 +84,32 @@ with open(output_file, "w") as f:
     json.dump(results, f, indent=2)
 
 print(f"\n✅ All synthetic labels generated and saved to {output_file}")
+
+# Create an aggregate file with all sentences, structure {insect : [list of sentences]}
+aggregate = {}
+for category, entries in results.items():
+    all_sentences = []
+    for entry in entries:
+        all_sentences.extend(entry["sentences"])
+    aggregate[category] = all_sentences
+aggregate_file = os.path.join(output_dir, "synthetic_bite_labels_aggregate.json")
+with open(aggregate_file, "w") as f:
+    json.dump(aggregate, f, indent=2)
+
+# Upload to Google Cloud Storage if GCP_BUCKET_NAME is set
+gcp_bucket_name = os.getenv("GCP_BUCKET_NAME")
+gcp_project = os.getenv("GCP_PROJECT")
+if gcp_bucket_name and gcp_project:
+    try:
+        storage_client = storage.Client(project=gcp_project)
+        bucket = storage_client.bucket(gcp_bucket_name)
+
+        blob = bucket.blob("synthetic_bite_labels.json")
+        blob.upload_from_filename(output_file)
+
+        # Upload aggregate file as well
+        aggregate_blob = bucket.blob("synthetic_bite_labels_aggregate.json")
+        aggregate_blob.upload_from_filename(aggregate_file)
+        print(f"✅ Uploaded {output_file} to GCP bucket {gcp_bucket_name}")
+    except Exception as e:
+        print(f"⚠️ Failed to upload to GCP: {e}")
