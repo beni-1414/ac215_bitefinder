@@ -33,7 +33,7 @@ class Trainer():
         self.processor = model.processor
         self.train_dataloader = DataLoader(train_dataset, **dataloader_kwargs)
         self.eval_dataloader = DataLoader(eval_dataset, **dataloader_kwargs)
-        self.optimizer = optimizer_class(model.parameters(), **optimizer_kwargs)
+        self.optimizer = optimizer_class(filter(lambda param: param.requires_grad, model.parameters()), **optimizer_kwargs)
         self.num_epochs = num_epochs
         self.device = device
         self.verbose = verbose

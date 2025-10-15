@@ -3,17 +3,27 @@ import torch.optim as optim
 from trainer import Trainer
 from model import CLIPForBugBiteClassification, ViLTForBugBiteClassification
 from dataset import BugBitePairedDataset, train_eval_split, collate_paired_fn
+from save_utils import *
 
 seed = 42
 
 dataset = BugBitePairedDataset(seed=seed)
-model = ViLTForBugBiteClassification(num_labels=dataset.num_labels, dropout_prob=0.1)
-processor = model.processor
 train_dataset, eval_dataset = train_eval_split(dataset, train_split=0.8, seed=seed)
+model = CLIPForBugBiteClassification(num_labels=dataset.num_labels, freeze_params=False, dropout_prob=0.1)
+model_class = 'clip'
+config = {
+    'model_class': model_class,
+    'label_to_id': dataset.label_to_id,
+    'id_to_label': dataset.id_to_label,
+    'num_labels': dataset.num_labels
+}
+processor = model.processor
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+save = True
 
-num_epochs = 1
+num_epochs = 5
 dataloader_kwargs = {
-    'batch_size': 4, 
+    'batch_size': 64, 
     'shuffle': True, 
     'collate_fn': lambda batch: collate_paired_fn(batch, processor)
 }
@@ -29,8 +39,12 @@ trainer = Trainer(
     dataloader_kwargs=dataloader_kwargs, 
     optimizer_class=optim.Adam, 
     optimizer_kwargs=optimizer_kwargs, 
-    device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+    device=device,
     verbose=True,
 )
 trainer.train()
 trainer.eval()
+
+if save:
+    save_config(config, save_dir)
+    save_model(model, save_dir)

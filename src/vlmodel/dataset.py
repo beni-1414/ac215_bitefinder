@@ -4,6 +4,8 @@ from PIL import Image
 import os
 import torch
 from torch.utils.data import random_split
+import json
+# from google.cloud import storage
 
 '''
 Assumes the following directory structure:
@@ -19,20 +21,7 @@ data/
             bug_n/
         testing/
             ...
-    text/
-        training/
-            bug_1/
-                narratives.txt
-            bug_2/
-            ...
-            bug_n/
-        testing/
-            ...
-
-Data requirements:
-1. All images must be in RGB format
-2. All text files must be new line delimited
-3. All labels are denoted by leaf folder names
+    text.json
 '''
 
 '''
@@ -51,24 +40,22 @@ class BugBitePairedDataset(Dataset):
             self, 
             data_root_dir='data/', 
             image_root_dir='bug-bite-images/', 
-            text_root_dir='bug-bite-text/', 
             dataset='training', 
-            text_fname='narratives.txt',
+            text_fname='synthetic_text.json',
             image_extens=('.jpg', '.jpeg'),
             seed=None
     ):
         if seed is not None: random.seed(seed) # Set seed for reproducibility in dataset creation
         self.dataset = [] # Dataset of tuples: (image filepath, text, label)
         image_dir = data_root_dir+image_root_dir+dataset+'/' # Image dataset directory
-        text_dir = data_root_dir+text_root_dir+dataset+'/' # Text dataset directory
-        self.label_map = {label: i for i, label in enumerate(sorted(os.listdir(image_dir)))} # Encoded labels
-        self.num_labels = len(self.label_map)
-        for label in self.label_map:
-            text_file = text_dir+label+'/'+text_fname
-            image_label_dir = image_dir+label+'/'
-            # Load list of narratives for each label
-            with open(text_file, 'r') as f: 
-                narratives = [narrative.strip() for narrative in f]
+        self.label_to_id = {label: i for i, label in enumerate(sorted(os.listdir(image_dir)))} # Encoded label map
+        self.id_to_label = {i: label for i, label in enumerate(sorted(os.listdir(image_dir)))} # Decoded label map
+        self.num_labels = len(self.label_to_id) # Number of classes
+        with open(data_root_dir+text_fname, 'r') as text_file: # Parse text JSON file
+            text_data = json.load(text_file)
+            for label in self.label_to_id:
+                narratives = text_data[label] # Get list of text narratives for each label
+                image_label_dir = image_dir+label+'/'
                 # Load list of image filepaths for each label
                 for image_fname in os.listdir(image_label_dir):
                     if not image_fname.lower().endswith(image_extens): continue # Filter out non-image files
@@ -84,7 +71,7 @@ class BugBitePairedDataset(Dataset):
         image_file, text, label = self.dataset[idx]
         image = Image.open(image_file).convert('RGB') # Load PIL image from filepath
         item = {'image': image, 'text': text} # Return raw image and text (collate_fn will use processor to batch/pad)
-        item['labels'] = torch.tensor(self.label_map[label]) # Encode label to integer
+        item['labels'] = torch.tensor(self.label_to_id[label]) # Encode label to integer
         return item
 
 '''
@@ -116,3 +103,18 @@ def train_eval_split(dataset: Dataset, train_split=0.8, seed=None):
         return random_split(dataset, [train_size, eval_size], generator)
     else:
         return random_split(dataset, [train_size, eval_size])
+    
+def read_gcp():
+    # # Initiate Storage client
+    # storage_client = storage.Client(project=gcp_project)
+
+    # # Get reference to bucket
+    # bucket = storage_client.bucket(bucket_name)
+
+    # # Find all content in a bucket
+    # blobs = bucket.list_blobs(prefix="input_audios/")
+    # for blob in blobs:
+    #     print(blob.name)
+    #     if not blob.name.endswith("/"):
+    #         blob.download_to_filename(blob.name)
+    pass
