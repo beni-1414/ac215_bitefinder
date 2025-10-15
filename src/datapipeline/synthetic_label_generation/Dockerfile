@@ -10,6 +10,9 @@ ENV LANG=C.UTF-8
 # Tell Python to disable buffering so we don't lose any logs.
 ENV PYTHONUNBUFFERED=1
 
+ENV GCP_PROJECT=bitefinder-474614
+ENV GCP_BUCKET_NAME=bitefinder-data
+
 # Install uv and create app user
 RUN apt-get update && \
     apt-get upgrade -y && \

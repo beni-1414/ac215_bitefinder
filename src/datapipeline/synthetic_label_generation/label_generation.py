@@ -6,17 +6,15 @@ from dotenv import load_dotenv
 import os
 from prompt import build_prompt
 from google.cloud import storage
+from google.cloud import secretmanager
 
+def get_secret(secret_id: str):
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/{os.getenv('GCP_PROJECT')}/secrets/{secret_id}/versions/latest"
+    response = client.access_secret_version(name=name)
+    return response.payload.data.decode("UTF-8")
 
-# Load environment variables
-# Try to load from relative path first (for local development)
-# Then try from environment variables (for containerized environment)
-if os.path.exists('../../../.env'):
-    load_dotenv('../../../.env')
-else:
-    load_dotenv()
-
-api_key = os.getenv("OPENAI_API_KEY")
+api_key = get_secret("OPENAI_API_KEY")
 if not api_key:
     raise ValueError("OPENAI_API_KEY environment variable is required")
 
@@ -98,10 +96,9 @@ with open(aggregate_file, "w") as f:
 
 # Upload to Google Cloud Storage if GCP_BUCKET_NAME is set
 gcp_bucket_name = os.getenv("GCP_BUCKET_NAME")
-gcp_project = os.getenv("GCP_PROJECT")
-if gcp_bucket_name and gcp_project:
+if gcp_bucket_name:
     try:
-        storage_client = storage.Client(project=gcp_project)
+        storage_client = storage.Client()
         bucket = storage_client.bucket(gcp_bucket_name)
 
         blob = bucket.blob("synthetic_bite_labels.json")

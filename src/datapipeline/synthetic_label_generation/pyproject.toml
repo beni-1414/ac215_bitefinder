@@ -5,6 +5,7 @@ description = "Generate synthetic bite descriptions using OpenAI API"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "google-cloud-secret-manager>=2.0.0",
     "google-cloud-storage>=3.4.1",
     "openai>=1.0.0",
     "python-dotenv>=1.0.0",
