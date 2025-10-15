@@ -10,5 +10,4 @@ docker build -t $IMAGE_NAME -f Dockerfile .
 # Run Docker container with mounted volumes
 docker run --rm --name $IMAGE_NAME -ti \
     -v "$(pwd)":/app \
-    --env-file ../../../.env \
     $IMAGE_NAME
