@@ -96,10 +96,9 @@ with open(aggregate_file, "w") as f:
 
 # Upload to Google Cloud Storage if GCP_BUCKET_NAME is set
 gcp_bucket_name = os.getenv("GCP_BUCKET_NAME")
-gcp_project = os.getenv("GCP_PROJECT")
-if gcp_bucket_name and gcp_project:
+if gcp_bucket_name:
     try:
-        storage_client = storage.Client(project=gcp_project)
+        storage_client = storage.Client()
         bucket = storage_client.bucket(gcp_bucket_name)
 
         blob = bucket.blob("synthetic_bite_labels.json")
