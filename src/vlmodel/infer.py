@@ -29,5 +29,3 @@ with torch.no_grad():
         with open(pred_file, 'w') as file:
             file.write(f'{id_to_label[pred].replace('_', ' ')}')
         upload_file_to_bucket(pred_file, pred_file)
-
-if upload_to_gcp: download_file_from_gcp(pred_file, 'downloaded_'+pred_file)
