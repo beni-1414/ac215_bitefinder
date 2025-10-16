@@ -8,11 +8,12 @@ gcp = False
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 config = load_config(dir=save_dir, from_gcp=gcp)
-model_class = config['model_class']
+model_id = config['model_id']
 id_to_label = config['id_to_label']
 num_labels = config['num_labels']
+model_class = model_classes[model_id]
 
-model = model_classes[model_class](num_labels=num_labels)
+model = model_class(num_labels=num_labels)
 load_model(model, dir=save_dir, from_gcp=gcp)
 
 image = Image.open('data/images/testing/ants/fire_antsimage194.jpg').convert('RGB')
@@ -24,8 +25,8 @@ with torch.no_grad():
     probs = torch.softmax(outputs['logits'], dim=-1)[0]
     pred = probs.argmax().item()
     print(f'Predicted: {id_to_label[pred]} ({probs[pred]:.2f})')
-    # if gcp:
-    #     pred_file = 'bite_prediction.txt'
-    #     with open(pred_file, 'w') as file:
-    #         file.write(f'{id_to_label[pred].replace('_', ' ')}')
-    #     upload_file_to_bucket(pred_file, pred_file)
+    if gcp:
+        pred_file = 'pred.txt'
+        with open(pred_file, 'w') as file:
+            file.write(f'{id_to_label[pred].replace('_', ' ')}')
+        upload_file_to_bucket(pred_file, pred_file)

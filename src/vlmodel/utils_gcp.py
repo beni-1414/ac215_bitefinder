@@ -19,23 +19,6 @@ def upload_file_to_bucket(fp):
     else:
         print(f'‼️ Skipping upload to GCP (misssing GCP_PROJECT)')
 
-def upload_directory_to_bucket(flat_dir):
-    if gcp_bucket_name and gcp_project:
-        try:
-            storage_client = storage.Client(project=gcp_project)
-            bucket = storage_client.bucket(gcp_bucket_name)
-            for file in os.listdir(flat_dir):
-                fp = os.path.join(flat_dir, file)
-                blob = bucket.blob(fp)
-                blob.upload_from_filename(fp)
-                print(f'✅ Uploaded {fp} to GCP bucket {gcp_bucket_name}')
-        except Exception as e:
-            print(f'⚠️ Failed to upload to GCP: {e}')
-    elif gcp_bucket_name is None:
-        print(f'‼️ Skipping upload to GCP (misssing GCP_BUCKET_NAME)')
-    else:
-        print(f'‼️ Skipping upload to GCP (misssing GCP_PROJECT)')
-
 def download_file_from_gcp(storage_fp):
     if gcp_bucket_name and gcp_project:
         try:
@@ -50,9 +33,6 @@ def download_file_from_gcp(storage_fp):
         print(f'‼️ Skipping download from GCP (misssing GCP_BUCKET_NAME)')
     else:
         print(f'‼️ Skipping download from GCP (misssing GCP_PROJECT)')
-
-import os
-from google.cloud import storage
 
 def download_directory_from_gcp(storage_dir, local_dir='/app/'):
     if gcp_bucket_name and gcp_project:
