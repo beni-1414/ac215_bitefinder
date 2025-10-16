@@ -1,112 +1,104 @@
-import json
-import random
-import time
-from openai import OpenAI
-from dotenv import load_dotenv
 import os
+import time
+import random
 from prompt import build_prompt
-from google.cloud import storage
-from google.cloud import secretmanager
 
-def get_secret(secret_id: str):
-    client = secretmanager.SecretManagerServiceClient()
-    name = f"projects/{os.getenv('GCP_PROJECT')}/secrets/{secret_id}/versions/latest"
-    response = client.access_secret_version(name=name)
-    return response.payload.data.decode("UTF-8")
+from utils import (
+    init_openai_client,
+    load_json_file,
+    generate_batch_labels,
+    save_json,
+    upload_to_gcs,
+    timestamp_suffix
+)
 
-api_key = get_secret("OPENAI_API_KEY")
-if not api_key:
-    raise ValueError("OPENAI_API_KEY environment variable is required")
 
-# Initialize OpenAI client (make sure OPENAI_API_KEY is set in your env)
-client = OpenAI(api_key=api_key)
+def main(test_mode: bool = False):
+    # Initialize OpenAI client
+    client = init_openai_client()
 
-# Load input data from bucket
-with open("input/locations.json", "r") as f:
-    locations_data = json.load(f)
+    # Load input data
+    locations_data = load_json_file("input/locations.json")
+    symptoms_data = load_json_file("input/symptoms.json")
 
-with open("input/symptoms.json", "r") as f:
-    symptoms_data = json.load(f)
+    # Prepare results dict with the same 7 keys
+    results = {category: [] for category in locations_data.keys()}
 
-# Prepare results dict with the same 7 keys
-results = {category: [] for category in locations_data.keys()}
+    # Loop through each category
+    for category, locations in locations_data.items():
+        common_symptoms = symptoms_data[category]["common"]
+        rare_symptoms = symptoms_data[category]["rare"]
 
-# Loop through each of the 7 categories
-for category, locations in locations_data.items():
-    common_symptoms = symptoms_data[category]["common"]
-    rare_symptoms = symptoms_data[category]["rare"]
+        # Process locations in batches of up to 5
+        for i in range(0, len(locations), 5):
+            batch = locations[i:i+5]
+            selected_rare = random.choice(rare_symptoms)
+            prompt = build_prompt(batch, common_symptoms, selected_rare, category)
 
-    # Process locations in batches of up to 5
-    for i in range(0, len(locations), 5):
-        batch = locations[i:i+5]
+            if test_mode:
+                if i >= 5:
+                    break # Only do one batch in test mode
 
-        # Randomly pick one rare symptom if needed
-        selected_rare = random.choice(rare_symptoms)
+            try:
+                batch_json = generate_batch_labels(
+                    client=client,
+                    model="gpt-4o-mini",
+                    prompt=prompt
+                )
 
-        # Build the dynamic prompt
-        prompt = build_prompt(batch, common_symptoms, selected_rare, category)
-        # Send request
+                # Append to results
+                for location, sentences in batch_json.items():
+                    results[category].append({
+                        "location": location,
+                        "sentences": sentences
+                    })
+
+                print(f"✅ Generated for category '{category}', locations {batch}")
+
+            except Exception as e:
+                print(f"⚠️ Error for {category} / {batch}: {e}")
+                continue
+
+            # Sleep to avoid rate limits
+            time.sleep(1.5)
+
+    # Save final results with timestamp
+    suffix = timestamp_suffix()
+    synthetic_filename = f"synthetic_bite_labels_{suffix}.json"
+    aggregate_filename = f"synthetic_bite_labels_aggregate_{suffix}.json"
+
+    output_file = save_json(results, synthetic_filename)
+
+    # Create aggregate file
+    aggregate = {}
+    for category, entries in results.items():
+        all_sentences = []
+        for entry in entries:
+            all_sentences.extend(entry["sentences"])
+        aggregate[category] = all_sentences
+
+    aggregate_file = save_json(aggregate, aggregate_filename)
+
+    print(f"\n✅ All synthetic labels generated and saved to:")
+    print(f"   - {output_file}")
+    print(f"   - {aggregate_file}")
+
+    # Upload to GCS if bucket name is set
+    gcp_bucket_name = os.getenv("GCP_BUCKET_NAME")
+    save_path_gcp = os.getenv("GCP_PATH_SYNTHETIC_LABELS", "")
+    if gcp_bucket_name:
         try:
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.6,
-                response_format={"type": "json_object"}
-            )
-
-            output_text = response.choices[0].message.content.strip()
-            batch_json = json.loads(output_text)
-
-            # Append to results
-            for location, sentences in batch_json.items():
-                results[category].append({
-                    "location": location,
-                    "sentences": sentences
-                })
-
-            print(f"✅ Generated for category '{category}', locations {batch}")
-
+            upload_to_gcs(gcp_bucket_name, output_file, synthetic_filename)
+            upload_to_gcs(gcp_bucket_name, aggregate_file, aggregate_filename)
         except Exception as e:
-            print(f"⚠️ Error for {category} / {batch}: {e}")
-            continue
+            print(f"⚠️ Failed to upload to GCP: {e}")
 
-        # Sleep a bit to avoid rate limiting
-        time.sleep(1.5)
 
-# Save final results
-# Use output directory if it exists (for containerized environment)
-output_dir = "output" if os.path.exists("output") else "."
-output_file = os.path.join(output_dir, "synthetic_bite_labels.json")
-
-with open(output_file, "w") as f:
-    json.dump(results, f, indent=2)
-
-print(f"\n✅ All synthetic labels generated and saved to {output_file}")
-
-# Create an aggregate file with all sentences, structure {insect : [list of sentences]}
-aggregate = {}
-for category, entries in results.items():
-    all_sentences = []
-    for entry in entries:
-        all_sentences.extend(entry["sentences"])
-    aggregate[category] = all_sentences
-aggregate_file = os.path.join(output_dir, "synthetic_bite_labels_aggregate.json")
-with open(aggregate_file, "w") as f:
-    json.dump(aggregate, f, indent=2)
-
-# Upload to Google Cloud Storage if GCP_BUCKET_NAME is set
-gcp_bucket_name = os.getenv("GCP_BUCKET_NAME")
-if gcp_bucket_name:
-    try:
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(gcp_bucket_name)
-
-        blob = bucket.blob("synthetic_bite_labels.json")
-        blob.upload_from_filename(output_file)
-
-        # Upload aggregate file as well
-        aggregate_blob = bucket.blob("synthetic_bite_labels_aggregate.json")
-        aggregate_blob.upload_from_filename(aggregate_file)
-        print(f"✅ Uploaded {output_file} to GCP bucket {gcp_bucket_name}")
-    except Exception as e:
-        print(f"⚠️ Failed to upload to GCP: {e}")
+if __name__ == "__main__":
+    # Read the parameter test_mode from args if there is one
+    test_mode = False
+    args = os.sys.argv
+    if len(args) > 1 and args[1].lower() == "test":
+        test_mode = True
+        print("⚠️ Running in TEST MODE - only one batch per category will be processed")
+    main(test_mode=test_mode)

@@ -14,4 +14,5 @@ docker run --rm --name $IMAGE_NAME -ti \
     -v "$(pwd)"/$DATA_DIR:/app/data \
     -e GCP_PROJECT=$GCP_PROJECT \
     -e GCP_BUCKET_NAME=$GCP_BUCKET_NAME \
+    -e GCP_PATH_SYNTHETIC_LABELS=$GCP_PATH_SYNTHETIC_LABELS \
     $IMAGE_NAME
