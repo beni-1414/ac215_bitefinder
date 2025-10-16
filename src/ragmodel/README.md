@@ -1,5 +1,5 @@
 # RAG model
-
+This is used to chat with the LLM using the RAG system.
 
 ## Versions
 ### v1.0
@@ -32,6 +32,7 @@ python cli.py --chat --chunk_type char-split \
   --symptoms "red itchy welt on ankle, mild swelling" \
   --class "bed bug"
 ```
+This version asks the LLM how to treat the bug bite that was classified.
 
 
 ## Example output
