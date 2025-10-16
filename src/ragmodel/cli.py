@@ -128,8 +128,8 @@ def load_text_embeddings(df, collection, batch_size=500):
         "type": df["type"].tolist()[0] 
     }
     if metadata["type"] in bug_mappings:
-        bug_mappings = bug_mappings[metadata["type"]]
-        metadata["bug"] = bug_mappings["bug"]
+        bug_mapping = bug_mappings[metadata["type"]]
+        metadata["bug"] = bug_mapping["bug"]
 
     # Process data in batches
     total_inserted = 0
@@ -311,7 +311,7 @@ def query(method="char-split"):
 
     query = "Prevention for mosquito bites?" #"How is tolminc cheese made?"
     query_embedding = generate_query_embedding(query)
-    print("Embedding values:", query_embedding)
+    #print("Embedding values:", query_embedding) ## silence this for now
 
     # Get the collection
     collection = client.get_collection(name=collection_name)
@@ -348,7 +348,7 @@ def query(method="char-split"):
     results = collection.query(
         query_embeddings=[query_embedding],
         n_results=10,
-        where={"type": "mosquito"},
+        where={"type": "mosquito bites"},
         where_document={"$contains": search_string}
     )
     print("Query:", query)
@@ -366,7 +366,7 @@ def chat(method="char-split"):
     query = "How can I prevent mosquito bites?"#"How is cheese made?"
     query_embedding = generate_query_embedding(query)
     print("Query:", query)
-    print("Embedding values:", query_embedding)
+    #print("Embedding values:", query_embedding) ## silence for now
     # Get the collection
     collection = client.get_collection(name=collection_name)
 

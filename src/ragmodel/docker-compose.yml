@@ -1,0 +1,31 @@
+networks:
+    default:
+        name: llm-rag-network
+        external: true
+services:
+    llm-rag-cli:
+        image: llm-rag-cli
+        #env_file:
+            #- ../env.dev 
+        container_name: llm-rag-cli
+        volumes:
+            - ../secrets:/secrets
+            - ../ragmodel:/app #- ../llm-rag:/app
+        environment:
+            GOOGLE_APPLICATION_CREDENTIALS: "/secrets/llm-service-account.json"
+            #$GOOGLE_APPLICATION_CREDENTIALS
+            GCP_PROJECT: "mineral-style-471117-k1"
+            #$GCP_PROJECT
+        depends_on:
+            - chromadb
+    chromadb:
+        image: chromadb/chroma:latest
+        container_name: llm-rag-chromadb
+        ports:
+            - 8000:8000
+        volumes:
+            - ./docker-volumes/chromadb:/chroma/chroma
+        environment:
+            - IS_PERSISTENT=TRUE
+            - ANONYMIZED_TELEMETRY=FALSE
+            - CHROMA_CORS_ALLOW_ORIGINS=["*"] # This is not recommended for production environments.
