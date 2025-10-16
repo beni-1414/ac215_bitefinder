@@ -1,9 +1,9 @@
 import torch
 import torch.optim as optim
 from trainer import Trainer
-from model import CLIPForBugBiteClassification, ViLTForBugBiteClassification
+from model import *
 from dataset import BugBitePairedDataset, train_eval_split, collate_paired_fn
-from utils_model import model_class
+from utils_model import model_classes
 from utils_save import *
 
 seed = 42
@@ -14,16 +14,18 @@ save = True
 dataset = BugBitePairedDataset(on_gcp=gcp, seed=seed)
 train_split = 0.8
 train_dataset, eval_dataset = train_eval_split(dataset, train_split=train_split, seed=seed)
-model = CLIPForBugBiteClassification(num_labels=dataset.num_labels, freeze_params=False)
+model_id = 'clip'
+model_class = model_classes[model_id]
+model = model_class(num_labels=dataset.num_labels, freeze_params=False)
 config = {
-    'model_class': model_class(model),
+    'model_id': model_id,
     'label_to_id': dataset.label_to_id,
     'id_to_label': dataset.id_to_label,
     'num_labels': dataset.num_labels
 }
 processor = model.processor
 
-num_epochs = 1
+num_epochs = 5
 dataloader_kwargs = {
     'batch_size': 64, 
     'shuffle': True, 

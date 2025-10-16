@@ -58,17 +58,20 @@ def build_augmentations(
         rot = 10
         persp = 0.15
         blur_k = 3
+        zoom = 1.05  # 5% zoom
     elif strength == "strong":
         cj = dict(brightness=0.6, contrast=0.6, saturation=0.6, hue=0.08)
         rot = 25
         persp = 0.35
         blur_k = 5
+        zoom = 1.15  # 15% zoom for larger rotations
     else:
         # default to medium
         cj = dict(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.05)
         rot = 15
         persp = 0.25
         blur_k = 3
+        zoom = 1.10  # 10% zoom
 
     ops = []
     # do a content-preserving random crop + resize if a target size is given
@@ -82,6 +85,14 @@ def build_augmentations(
         T.RandomVerticalFlip(p=0.1),
         T.RandomRotation(degrees=rot, expand=False),
     ])
+    
+    # Zoom in slightly to crop out black corners from rotation
+    if image_size is not None:
+        zoom_size = int(image_size * zoom)
+        ops.extend([
+            T.Resize(zoom_size),
+            T.CenterCrop(image_size),
+        ])
 
     # perspective warp adds mild projective distortion (disabled via flag if desired)
     if enable_perspective:
@@ -126,7 +137,7 @@ def save_pil(img: Image.Image, path: Path, quality: int = 95) -> None:
     elif path.suffix.lower() == ".png":
         img.save(path, format="PNG", compress_level=6, optimize=True)
     else:
-        # if an unknown extension is passed, default to png to avoid surprises
+        # if an unknown extension is passed, default to png
         img.save(path.with_suffix(".png"), format="PNG", compress_level=6, optimize=True)
 
 
