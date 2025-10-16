@@ -21,11 +21,11 @@ if not api_key:
 # Initialize OpenAI client (make sure OPENAI_API_KEY is set in your env)
 client = OpenAI(api_key=api_key)
 
-# Load input data
-with open("locations.json", "r") as f:
+# Load input data from bucket
+with open("input/locations.json", "r") as f:
     locations_data = json.load(f)
 
-with open("symptoms.json", "r") as f:
+with open("input/symptoms.json", "r") as f:
     symptoms_data = json.load(f)
 
 # Prepare results dict with the same 7 keys
