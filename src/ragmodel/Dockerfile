@@ -14,12 +14,12 @@ ENV PYTHONUNBUFFERED=1
 
 # Tell uv to copy packages from the wheel into the site-packages
 ENV UV_LINK_MODE=copy
-ENV UV_PROJECT_ENVIRONMENT=/app/.venv
+ENV UV_PROJECT_ENVIRONMENT=/.venv
 ##ENV UV_PROJECT_ENVIRONMENT=/.venv
 
 
 # ENV GOOGLE_APPLICATION_CREDENTIALS=../secrets/llm-service-account.json
-ENV GCP_PROJECT="mineral-style-471117-k1"
+# ENV GCP_PROJECT="mineral-style-471117-k1"
 
 
 # Ensure we have an up to date baseline, install dependencies and
@@ -35,21 +35,26 @@ RUN set -ex; \
     pip install uv && \
     useradd -ms /bin/bash app -d /home/app -u 1000 && \
     mkdir -p /app && \
-    chown app:app /app
-    #mkdir -p /.venv && \
-    #chown app:app /.venv
+    chown app:app /app && \
+    mkdir -p /.venv && \
+    chown app:app /.venv
 
 # Switch to the new user
 USER app
 # Workdir inside /app
 WORKDIR /app
 
+# Copy dependency files first for better layer caching
+COPY --chown=app:app pyproject.toml uv.lock* ./
+
+# Install dependencies in a separate layer for better caching
+RUN uv sync --frozen
+
 # Copy the source code
 COPY --chown=app:app . ./
 # COPY --chown=app:app pyproject.toml uv.lock* ./
 
-RUN uv sync
-# Install dependencies in a separate layer for better caching
+
 # RUN uv sync --frozen
 # Copy the rest of the source code
 #COPY --chown=app:app . ./
@@ -57,7 +62,7 @@ RUN uv sync
 # Entry point
 ENTRYPOINT ["/bin/bash"]
 # Get into the uv virtual environment shell
-CMD ["-c", "source /app/.venv/bin/activate && exec bash"]
+CMD ["-c", "source /.venv/bin/activate  && exec bash"]
 #ENTRYPOINT ["/bin/bash","docker-entrypoint.sh"]
 #CMD ["/bin/bash"]
 

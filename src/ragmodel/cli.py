@@ -128,8 +128,8 @@ def load_text_embeddings(df, collection, batch_size=500):
         "type": df["type"].tolist()[0] 
     }
     if metadata["type"] in bug_mappings:
-        bug_mappings = bug_mappings[metadata["type"]]
-        metadata["bug"] = bug_mappings["bug"]
+        bug_mapping = bug_mappings[metadata["type"]]
+        metadata["bug"] = bug_mapping["bug"]
 
     # Process data in batches
     total_inserted = 0
@@ -311,7 +311,7 @@ def query(method="char-split"):
 
     query = "Prevention for mosquito bites?" #"How is tolminc cheese made?"
     query_embedding = generate_query_embedding(query)
-    print("Embedding values:", query_embedding)
+    #print("Embedding values:", query_embedding) ## silence this for now
 
     # Get the collection
     collection = client.get_collection(name=collection_name)
@@ -348,14 +348,23 @@ def query(method="char-split"):
     results = collection.query(
         query_embeddings=[query_embedding],
         n_results=10,
-        where={"type": "mosquito"},
+        where={"type": "mosquito bites"},
         where_document={"$contains": search_string}
     )
     print("Query:", query)
     print("\n\nResults:", results)
 
+###
+def _normalize_conf_to_percent(conf: float) -> float:
+    """Accept 0–1 or 0–100. Return 0–100 clipped."""
+    pct = conf * 100.0 if 0.0 <= conf <= 1.0 else conf
+    try:
+        pct = float(pct)
+    except Exception:
+        pct = 0.0
+    return max(0.0, min(100.0, pct))
 
-def chat(method="char-split"):
+def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: str = ""):
     print("chat()")
 
     # Connect to chroma DB
@@ -363,29 +372,43 @@ def chat(method="char-split"):
     # Get a collection object from an existing collection, by name. If it doesn't exist, create it.
     collection_name = f"{method}-collection"
 
-    query = "How can I prevent mosquito bites?"#"How is cheese made?"
-    query_embedding = generate_query_embedding(query)
-    print("Query:", query)
-    print("Embedding values:", query_embedding)
+    #query = "How can I treat mosquito bites?"#"How is cheese made?"
+    #query_embedding = generate_query_embedding(query)
+    #print("Query:", query, "\n")
+
+    ###
+    user_question = f"How can I treat {bug_class} bites? My symptoms: {symptoms}"
+    query_embedding = generate_query_embedding(user_question)
+    print("Query:", user_question, "\n")
+
+    #print("Embedding values:", query_embedding) ## silence for now
     # Get the collection
     collection = client.get_collection(name=collection_name)
 
     # Query based on embedding value
     results = collection.query(
         query_embeddings=[query_embedding],
-        n_results=10
+        n_results=10,
+        where = {"bug": bug_class}
     )
-    print("\n\nResults:", results)
+    #print("\n\nResults:", results) ## silence for now
 
-    print(len(results["documents"][0]))
+    #print(len(results["documents"][0])) ## silence for now
 
-    INPUT_PROMPT = f"{query}\n" + "\n".join(results["documents"][0])
+    conf_pct = _normalize_conf_to_percent(conf)
+    prompt = (
+        f"A patient reported experiencing the following: {symptoms}.\n"
+        f"We believe with {conf_pct:.1f}% confidence that they have a {bug_class} bug bite.\n"
+        "What do you recommend they do to treat it?"
+    )
+
+    INPUT_PROMPT = f"{prompt}\n" + "\n".join(results["documents"][0])
     #INPUT_PROMPT = f"""
 	#{query}
 	#{"\n".join(results["documents"][0])}
 	#"""
 
-    print("INPUT_PROMPT: ", INPUT_PROMPT)
+    #print("INPUT_PROMPT: ", INPUT_PROMPT)  ## silence for now
     response = llm_client.models.generate_content(
         model=GENERATIVE_MODEL, contents=INPUT_PROMPT
     )
@@ -490,7 +513,14 @@ def main(args=None):
         query(method=args.chunk_type)
 
     if args.chat:
-        chat(method=args.chunk_type)
+        ###
+        symptoms = args.symptoms
+        conf = args.conf
+        bug_class = args.vision_class
+        chat(method=args.chunk_type,
+            symptoms=symptoms, 
+            conf=conf, 
+            bug_class=bug_class)
 
     if args.get:
         get(method=args.chunk_type)
@@ -541,6 +571,14 @@ if __name__ == "__main__":
     )
     parser.add_argument("--chunk_type", default="char-split",
                         help="char-split | recursive-split | semantic-split")
+    
+    ###
+    parser.add_argument("--symptoms", type=str, help="User symptom text")
+    parser.add_argument("--conf", type=float, help="Vision model confidence rate")
+    parser.add_argument("--class", dest="vision_class", type=str, help="Bug class, e.g., mosquito")
+
+    
+
 
     args = parser.parse_args()
 
