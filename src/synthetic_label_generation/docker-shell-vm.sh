@@ -2,7 +2,7 @@
 
 set -e # Exit on error
 
-source ../../env.dev # Read the settings file
+. ../../env.dev # Read the settings file
 export IMAGE_NAME="synthetic-label-generation"
 
 # Build Docker image
