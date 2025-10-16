@@ -8,7 +8,7 @@
 
 
 ### Input DataBase Overview
-Stores the bug bite information from cleveland clinic
+Stores the bug bite information from cleveland clinic with the following information:
 - Overview
 - Symptoms and Causes
 - Management and Treatment
@@ -34,5 +34,5 @@ python cli.py --chat --chunk_type char-split \
 ```
 
 
-## Example
+## Example output
 ![alt text](image.png)
