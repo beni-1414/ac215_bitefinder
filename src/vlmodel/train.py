@@ -3,25 +3,27 @@ import torch.optim as optim
 from trainer import Trainer
 from model import CLIPForBugBiteClassification, ViLTForBugBiteClassification
 from dataset import BugBitePairedDataset, train_eval_split, collate_paired_fn
+from utils_model import model_class
 from utils_save import *
 
 seed = 42
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+gcp = True
+save = True
 
-dataset = BugBitePairedDataset(seed=seed)
-train_dataset, eval_dataset = train_eval_split(dataset, train_split=0.8, seed=seed)
-model = CLIPForBugBiteClassification(num_labels=dataset.num_labels, freeze_params=False, dropout_prob=0.1)
-model_class = 'clip'
+dataset = BugBitePairedDataset(on_gcp=gcp, seed=seed)
+train_split = 0.8
+train_dataset, eval_dataset = train_eval_split(dataset, train_split=train_split, seed=seed)
+model = CLIPForBugBiteClassification(num_labels=dataset.num_labels, freeze_params=False)
 config = {
-    'model_class': model_class,
+    'model_class': model_class(model),
     'label_to_id': dataset.label_to_id,
     'id_to_label': dataset.id_to_label,
     'num_labels': dataset.num_labels
 }
 processor = model.processor
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-save = True
 
-num_epochs = 5
+num_epochs = 1
 dataloader_kwargs = {
     'batch_size': 64, 
     'shuffle': True, 
@@ -46,5 +48,5 @@ trainer.train()
 trainer.eval()
 
 if save:
-    save_config(config, save_dir)
-    save_model(model, save_dir)
+    save_config(config, dir=save_dir)
+    save_model(model, dir=save_dir)

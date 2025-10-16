@@ -5,6 +5,8 @@ import os
 import torch
 from torch.utils.data import random_split
 import json
+from utils_gcp import *
+import io
 
 '''
 Assumes the following directory structure:
@@ -20,7 +22,11 @@ data/
             bug_n/
         testing/
             ...
-    text.json
+    text/
+        training/
+            texts.json
+        testing/
+            texts.json
 '''
 
 '''
@@ -32,45 +38,75 @@ BugBitePairedDataset: labeled paired image-text dataset for bug bite images + pa
 - dataset: which dataset split to use ('training' or 'testing')
 - text_fname: name of text file containing patient narratives for each label
 - image_extens: tuple of allowed image file extensions
+- on_cloud: whether data is stored on cloud (if so, will download from GCP bucket, otherwise will load from local system)
 - seed: random seed for reproducibility
 '''
 class BugBitePairedDataset(Dataset):
     def __init__(
             self, 
             data_root_dir='data/', 
-            image_root_dir='bug-bite-images/', 
+            image_root_dir='images/',
+            text_root_dir='text/',
             dataset='training', 
-            text_fname='synthetic_text.json',
+            text_fname='texts.json',
             image_extens=('.jpg', '.jpeg'),
+            on_gcp=False,
             seed=None
     ):
-        if seed is not None: random.seed(seed) # Set seed for reproducibility in dataset creation
-        self.dataset = [] # Dataset of tuples: (image filepath, text, label)
-        image_dir = data_root_dir+image_root_dir+dataset+'/' # Image dataset directory
-        self.label_to_id = {label: i for i, label in enumerate(sorted(os.listdir(image_dir)))} # Encoded label map
-        self.id_to_label = {i: label for i, label in enumerate(sorted(os.listdir(image_dir)))} # Decoded label map
-        self.num_labels = len(self.label_to_id) # Number of classes
-        with open(data_root_dir+text_fname, 'r') as text_file: # Parse text JSON file
-            text_data = json.load(text_file)
-            for label in self.label_to_id:
-                narratives = text_data[label] # Get list of text narratives for each label
-                image_label_dir = image_dir+label+'/'
-                # Load list of image filepaths for each label
-                for image_fname in os.listdir(image_label_dir):
-                    if not image_fname.lower().endswith(image_extens): continue # Filter out non-image files
-                    image_fliepath = os.path.join(image_label_dir, image_fname)
-                    text = random.choice(narratives) # Randomly select a narrative for each image
-                    self.dataset.append((image_fliepath, text, label)) # Add (image filepath, text, label) tuple to dataset
+        # Dataset of (image filepath, text, label) tuples
+        self.dataset = []
         
+        # Set seed for reproducibility in dataset creation
+        if seed is not None: random.seed(seed)
+        
+        # Download data from GCP bucket
+        if on_gcp: download_directory_from_gcp(data_root_dir)
+
+        # Build image and text directory paths
+        image_dir = data_root_dir+image_root_dir+dataset+'/'
+        text_dir = data_root_dir+text_root_dir+dataset+'/'
+
+        # Get list of labels (which correspond to image subdirectories)
+        labels = os.listdir(image_dir)
+
+        # Encode labels to integers and vice versa
+        self.label_to_id = {label: i for i, label in enumerate(sorted(labels))}
+        self.id_to_label = {i: label for i, label in enumerate(sorted(labels))}
+        self.num_labels = len(self.label_to_id)
+        
+        # Load texts JSON file
+        with open(text_dir+text_fname, 'r') as text_file:
+            text_data = json.load(text_file)
+        
+            # Build dataset of (image filepath, text, label) tuples
+            for label in self.label_to_id:
+                # Get list of text narratives for each label
+                narratives = text_data[label]
+                
+                # Load list of image files for each label
+                image_label_dir = image_dir+label+'/'
+                image_files = os.listdir(image_label_dir)
+                
+                for image_file in image_files:
+                    # Filter out non-image files
+                    if not image_file.lower().endswith(image_extens): continue
+                    # Construct image filepath
+                    image_filepath = os.path.join(image_label_dir, image_file)
+                    # Randomly select a narrative for each image
+                    text = random.choice(narratives)
+                    # Add (image filepath, text, label) tuple to dataset
+                    self.dataset.append((image_filepath, text, label))
 
     def __len__(self):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        image_file, text, label = self.dataset[idx]
-        image = Image.open(image_file).convert('RGB') # Load PIL image from filepath
-        item = {'image': image, 'text': text} # Return raw image and text (collate_fn will use processor to batch/pad)
-        item['labels'] = torch.tensor(self.label_to_id[label]) # Encode label to integer
+        image_fp, text, label = self.dataset[idx]
+        # Load image
+        image = Image.open(image_fp).convert('RGB')        
+        # Return raw image and text (collate_fn will use processor to batch/pad) and encoded label
+        item = {'image': image, 'text': text}
+        item['labels'] = torch.tensor(self.label_to_id[label])
         return item
 
 '''
@@ -102,18 +138,3 @@ def train_eval_split(dataset: Dataset, train_split=0.8, seed=None):
         return random_split(dataset, [train_size, eval_size], generator)
     else:
         return random_split(dataset, [train_size, eval_size])
-    
-def read_gcp():
-    # # Initiate Storage client
-    # storage_client = storage.Client(project=gcp_project)
-
-    # # Get reference to bucket
-    # bucket = storage_client.bucket(bucket_name)
-
-    # # Find all content in a bucket
-    # blobs = bucket.list_blobs(prefix="input_audios/")
-    # for blob in blobs:
-    #     print(blob.name)
-    #     if not blob.name.endswith("/"):
-    #         blob.download_to_filename(blob.name)
-    pass
