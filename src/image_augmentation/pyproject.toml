@@ -1,0 +1,14 @@
+[project]
+name = "image_augmentation"
+version = "0.1.0"
+description = "offline image augmentation for bug-bite dataset"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "torch",         # cpu wheels via PIP_EXTRA_INDEX_URL in the dockerfile
+  "torchvision",
+  "pillow",
+  "google-cloud-storage",
+]
+
+[tool.uv]
