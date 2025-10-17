@@ -5,7 +5,7 @@ Group Name: Bite Finder
 Team Members: Jack Hwang, Zoe Zabetian, Irith Katiyar, Benet Fité
 
 ## Overview
-Our project is a bug bite classification app, where a user can take a photo of their skin on their phone and type their symptoms, and the app will predict what bug caused the bite and provide recommendations on which products to use or whether to see a doctor.
+Project: a bug bite classification app, where a user can take a photo of their skin on their phone and type their symptoms, and the app will predict what bug caused the bite and provide recommendations on which products to use or whether to see a doctor.
 
 Currently, our project contains 4 containerized workflows that achieve 4 different tasks. At the moment, they all use a GCP bucket as a shared storage space.
 
