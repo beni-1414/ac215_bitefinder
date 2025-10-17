@@ -3,6 +3,7 @@ from PIL import Image
 from utils_save import *
 from utils_gcp import *
 from utils_model import model_classes
+import argparse
 
 gcp = False
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -13,11 +14,18 @@ id_to_label = config['id_to_label']
 num_labels = config['num_labels']
 model_class = model_classes[model_id]
 
+parser = argparse.ArgumentParser()
+parser.add_argument('image_fp', type=str)
+parser.add_argument('text', type=str)
+
+args = parser.parse_args()
+text = args.text
+image = Image.open(args.image_fp).convert('RGB')
+# 'data/images/testing/ants/fire_antsimage194.jpg'
+# 'My arm is burning, I think I got bit by something at the beach.'
+
 model = model_class(num_labels=num_labels)
 load_model(model, dir=save_dir, from_gcp=gcp)
-
-image = Image.open('data/images/testing/ants/fire_antsimage194.jpg').convert('RGB')
-text = 'My arm is burning, I think I got bit by something at the beach.'
 
 processed = model.processor(text=[text], images=[image], return_tensors='pt', padding=True).to(device)
 with torch.no_grad():

@@ -7,8 +7,8 @@ This is used to chat with the LLM using the RAG system.
    - Uses an Gemini to generate natural-language advice.
 
 
-### Input DataBase Overview
-Stores the bug bite information from cleveland clinic with the following information:
+### Input Database Overview
+Stores the bug bite information from Cleveland Clinic with the following information:
 - Overview
 - Symptoms and Causes
 - Management and Treatment

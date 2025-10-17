@@ -1,4 +1,5 @@
 from google.cloud import storage
+from tqdm import tqdm
 import os
 
 gcp_bucket_name = os.getenv('GCP_BUCKET_NAME')
@@ -40,7 +41,7 @@ def download_directory_from_gcp(storage_dir, local_dir='/app/'):
             storage_client = storage.Client(project=gcp_project)
             bucket = storage_client.bucket(gcp_bucket_name)
             blobs = bucket.list_blobs(prefix=storage_dir)
-            for blob in blobs:
+            for blob in tqdm(blobs, desc='Downloading'):
                 if not blob.name.endswith('/'):
                     local_path = os.path.join(local_dir, blob.name)
                     os.makedirs(os.path.dirname(local_path), exist_ok=True)
