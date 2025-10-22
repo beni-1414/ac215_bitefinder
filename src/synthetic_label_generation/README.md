@@ -1,9 +1,5 @@
 # Synthetic Label Generation
 
-## Prerequisites
-- Docker installed on your system
-- OpenAI API key on your GCP account secrets manager called `OPENAI_API_KEY`, accessible to the service account you are using
-
 ## Files Overview
 ### input/symptoms.json
 Extraction of subjective sensory symptoms for insect and arachnid bites from Cleveland Clinic website. Symptoms are categorized by frequency (common vs. rare/allergic reactions) and structured in JSON format with separate lists for each bite type.
@@ -25,6 +21,19 @@ Ensure the VM is authenticated with the proper service account.
 ```bash
 sh src/synthetic_label_generation/docker-shell-vm.sh
 ```
+
+Once inside the container, run:
+```bash
+python3 src/synthetic_label_generation/label_generation.py
+```
+
+or to use test mode with fewer samples for quick verification:
+
+```bash
+python3 src/synthetic_label_generation/label_generation.py test
+```
+
+You will find the output both in the container and in the GCP bucket ``data/text/training/texts_{timestamp}.json``
 
 ## Versions
 ### v1.0

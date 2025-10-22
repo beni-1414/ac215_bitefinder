@@ -19,17 +19,17 @@ class CLIPForBugBiteClassification(nn.Module):
         super().__init__()
         self.model = CLIPModel.from_pretrained(model_name) # Pre-trained CLIP model
         self.processor = CLIPProcessor.from_pretrained(model_name) # Pre-trained CLIP processor
-        # self.classifier = nn.Sequential( # Classification head (linear layer) to project image + text embeddings (image_embeds + text_embeds = projection_dim * 2) to label space
-        #     nn.Dropout(0.1),
-        #     nn.Linear(2 * self.model.config.projection_dim, num_labels)
-        # )
-        hidden_dim = 512
-        self.classifier = nn.Sequential( # Classification head with two linear layers and GELU activation in between
-            nn.Linear(2 * self.model.config.projection_dim, hidden_dim),
-            nn.GELU(),
+        self.classifier = nn.Sequential( # Classification head (linear layer) to project image + text embeddings (image_embeds + text_embeds = projection_dim * 2) to label space
             nn.Dropout(0.1),
-            nn.Linear(hidden_dim, num_labels)
+            nn.Linear(2 * self.model.config.projection_dim, num_labels)
         )
+        # hidden_dim = self.model.config.projection_dim
+        # self.classifier = nn.Sequential( # Classification head with two linear layers and GELU activation in between
+        #     nn.Linear(2 * self.model.config.projection_dim, hidden_dim),
+        #     nn.ReLU(),
+        #     nn.Dropout(0.1),
+        #     nn.Linear(hidden_dim, num_labels)
+        # )
         if freeze_params: # Freeze pre-trained model parameters
             for name, param in self.model.named_parameters():
                 if not any(x in name for x in ["classifier", "visual_projection", "text_projection"]): param.requires_grad = False
