@@ -88,8 +88,8 @@ def main(test_mode: bool = False):
     save_path_gcp = os.getenv("GCP_PATH_SYNTHETIC_LABELS", "")
     if gcp_bucket_name:
         try:
-            upload_to_gcs(gcp_bucket_name, output_file, synthetic_filename)
-            upload_to_gcs(gcp_bucket_name, aggregate_file, aggregate_filename)
+            upload_to_gcs(gcp_bucket_name, output_file, save_path_gcp + synthetic_filename)
+            upload_to_gcs(gcp_bucket_name, aggregate_file, save_path_gcp + aggregate_filename)
         except Exception as e:
             print(f"⚠️ Failed to upload to GCP: {e}")
 

@@ -27,6 +27,12 @@ Once inside the container, run:
 python3 src/synthetic_label_generation/label_generation.py
 ```
 
+or to use test mode with fewer samples for quick verification:
+
+```bash
+python3 src/synthetic_label_generation/label_generation.py test
+```
+
 You will find the output both in the container and in the GCP bucket ``data/text/training/texts_{timestamp}.json``
 
 ## Versions
