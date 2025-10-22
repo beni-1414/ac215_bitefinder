@@ -38,3 +38,6 @@ You will find the output both in the container and in the GCP bucket ``data/text
 ## Versions
 ### v1.0
 Only contains info regarding symptoms and location. No mention of body part nor number of bites (one, many...) which would both be common in real world scenario. 
+
+### v2.0
+Adds many more locations, so more variability in the output for training.
