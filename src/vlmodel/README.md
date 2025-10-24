@@ -11,17 +11,20 @@ sh docker-shell.sh
 ```
 This will build the image with the required dependencies and run the container, opening in `app`.
 
+First, set the Weights & Biases API key from the terminal: `export WANDB_API_KEY="..."`
+
 To train a model, run:
 ```bash
 python train.py
 ```
 Note: currently, the training script is not a CLI, so training arguments must be specified at the top of the script, such as the model type (`'clip'` or `'vilt'`), number of epochs, batch size, and learning rate.
 The training script does the following:
-1. Downloads the dataset from the GCP bucket.
-2. Splits the dataset into training and validation sets.
-3. Trains the model on the training set.
-4. Evaluates the model the validation set.
-5. Saves the model config and weights.
+1. Downloads the data from the GCP bucket.
+2. Constructs a labeled paired image-text dataset.
+3. Splits the dataset into training and validation sets.
+4. Trains the model on the training set.
+5. Evaluates the model the validation set.
+6. Saves the model config and weights.
 The training loss and accuracy per epoch as well as the evaluation loss and accuracy are printed.
 
 To run inference

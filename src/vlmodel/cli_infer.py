@@ -2,7 +2,7 @@ import torch
 from PIL import Image
 from utils_save import *
 from utils_gcp import *
-from utils_model import model_classes
+from model import *
 import argparse
 
 gcp = False

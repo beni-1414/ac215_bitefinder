@@ -11,16 +11,18 @@ CLIP (Contrastive Language-Image Pre-training):
 
 Initialization arguments:
 - num_labels: number of classes
-- model_name: pre-trained model name from Hugging Face model hub
+- pretrained: pretrained model name from Hugging Face model hub
 - freeze_params: whether to freeze pre-trained model parameters during training
+- dropout_prob: probability of element in VL model outupt embedding to be zeroed
 '''
 class CLIPForBugBiteClassification(nn.Module):
-    def __init__(self, num_labels, model_name='openai/clip-vit-base-patch32', freeze_params=True):
+    def __init__(self, num_labels, pretrained='openai/clip-vit-base-patch32', freeze_params=True, dropout_prob=0.1):
         super().__init__()
-        self.model = CLIPModel.from_pretrained(model_name) # Pre-trained CLIP model
-        self.processor = CLIPProcessor.from_pretrained(model_name) # Pre-trained CLIP processor
+        self.pretrained = pretrained
+        self.model = CLIPModel.from_pretrained(self.pretrained) # Pre-trained CLIP model
+        self.processor = CLIPProcessor.from_pretrained(self.pretrained) # Pre-trained CLIP processor
         self.classifier = nn.Sequential( # Classification head (linear layer) to project image + text embeddings (image_embeds + text_embeds = projection_dim * 2) to label space
-            nn.Dropout(0.1),
+            nn.Dropout(dropout_prob),
             nn.Linear(2 * self.model.config.projection_dim, num_labels)
         )
         # hidden_dim = self.model.config.projection_dim
@@ -32,7 +34,7 @@ class CLIPForBugBiteClassification(nn.Module):
         # )
         if freeze_params: # Freeze pre-trained model parameters
             for name, param in self.model.named_parameters():
-                if not any(x in name for x in ["classifier", "visual_projection", "text_projection"]): param.requires_grad = False
+                if not any(x in name for x in ['classifier', 'visual_projection', 'text_projection']): param.requires_grad = False
         self.loss_fn = nn.CrossEntropyLoss()
 
     def forward(self, input_ids, attention_mask, pixel_values, labels=None, **kwargs):
@@ -41,7 +43,7 @@ class CLIPForBugBiteClassification(nn.Module):
         logits = self.classifier(output_embeds) # Pass output through classification head
         loss = None
         if labels is not None: loss = self.loss_fn(logits, labels) # Compute cross-entropy loss if training
-        return {"loss": loss, "logits": logits}
+        return {'loss': loss, 'logits': logits}
 
 '''
 ViLT (Vision-and-Language Transformer):
@@ -51,17 +53,18 @@ ViLT (Vision-and-Language Transformer):
 
 Initialization arguments:
 - num_labels: number of classes
-- model_name: pre-trained model name from Hugging Face model hub
+- pretrained: pre-trained model name from Hugging Face model hub
 - freeze_params: whether to freeze pre-trained model parameters during training
-- dropout_prob: dropout probability (0 means no dropout layer)
+- dropout_prob: probability of element in VL model outupt embedding to be zeroed
 '''
 class ViLTForBugBiteClassification(nn.Module):
-    def __init__(self, num_labels, model_name='dandelin/vilt-b32-mlm', freeze_params=True):
+    def __init__(self, num_labels, pretrained='dandelin/vilt-b32-mlm', freeze_params=True, dropout_prob=0.1):
         super().__init__()
-        self.model = ViltModel.from_pretrained(model_name) # Pre-trained ViLT model
-        self.processor = ViltProcessor.from_pretrained(model_name) # Pre-trained ViLT processor
+        self.pretrained = pretrained
+        self.model = ViltModel.from_pretrained(self.pretrained) # Pre-trained ViLT model
+        self.processor = ViltProcessor.from_pretrained(self.pretrained) # Pre-trained ViLT processor
         self.classifier = nn.Sequential( # Classification head (linear layer) to project encoding space (of hidden_size dimensionality) to label space
-            nn.Dropout(0.1),
+            nn.Dropout(dropout_prob),
             nn.Linear(self.model.config.hidden_size, num_labels)
         )
         if freeze_params: # Freeze pre-trained model parameters
@@ -74,4 +77,12 @@ class ViLTForBugBiteClassification(nn.Module):
         logits = self.classifier(output_embeds) # Pass output through classification head
         loss = None
         if labels is not None: loss = self.loss_fn(logits, labels) # Compute cross-entropy loss if training
-        return {"loss": loss, "logits": logits}
+        return {'loss': loss, 'logits': logits}
+
+'''
+model_classes: map of model name (in args and logs) to model class
+'''
+model_classes = {
+    'clip': CLIPForBugBiteClassification,
+    'vilt': ViLTForBugBiteClassification,
+}

@@ -37,7 +37,13 @@ RUN set -ex; \
 USER app
 WORKDIR /app
 
-# Copy the source code
+# Copy dependency files first for better layer caching
+COPY --chown=app:app pyproject.toml uv.lock* ./
+
+# Install dependencies in a separate layer for better caching
+RUN uv sync --frozen
+
+# Copy the rest of the source code
 COPY --chown=app:app . ./
 
 RUN uv sync

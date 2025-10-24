@@ -9,7 +9,6 @@ def save_model(model, dir, to_gcp=False):
     model.model.save_pretrained(dir)
     model.processor.save_pretrained(dir)
     torch.save(model.classifier.state_dict(), f'{dir}/classifier.pt')
-    # if to_gcp: 
 
 def save_config(config, dir, to_gcp=False):
     if not os.path.exists(dir): os.makedirs(dir)
