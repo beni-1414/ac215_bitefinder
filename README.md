@@ -9,6 +9,17 @@ Our project is a bug bite classification app, where a user can take a photo of t
 
 Currently, our project contains 4 containerized workflows that achieve 4 different tasks. At the moment, they all use a GCP bucket as a shared storage space.
 
+## Milestone 3
+
+In this milestone, we have three major updates:
+1. Refining our synthetic label generation.
+2. Preparing data ingestion code for multiple data versions and scalable training.
+3. Integrating model training/validation with Weights & Biases for experiment tracking.
+
+Together, these three updates are preparing us from transitioning from independent containers to a serverless pipeline with Vertex AI, which we are currently in the process of developing.
+
+Finally, we spent time clarifying our business pitch and working on our midterm presentation, which can be found [docs/midterm_presentation.pdf](docs/midterm_presentation.pdf).
+
 ## Prerequisites
 - Docker installed on your system
 - OpenAI API key on your GCP account secrets manager called `OPENAI_API_KEY`, accessible to the service account you are using (only for `synthetic_label_generation`)
@@ -64,12 +75,12 @@ This container is responsible for the vision-language classification model train
 
 Once inside the container, to train a model:
 ```bash
-python train.py
+python cli_train.py <args>
 ```
 
 Once inside the container, to run inference: 
 ```bash
-python infer.py <image_fp> <text>
+python cli_infer.py <image_fp> <text>
 ```
 
 More detail about this container and its usage can be found in [src/vlmodel/README.md](src/vlmodel/README.md).
