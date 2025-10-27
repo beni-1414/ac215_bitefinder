@@ -6,6 +6,7 @@ from tqdm import tqdm
 import wandb
 from utils_wandb import *
 from utils_dataloader import *
+from utils_gcp import get_secret
 
 '''
 Trainer: experiment handler for model training and evaluation with integrated W&B logging
@@ -63,8 +64,12 @@ class Trainer():
         self.device = device
         self.verbose = verbose
 
-        # Log into Weights & Biases (automatically looks for WANDB_API_KEY environment variable, which must be preset)
-        wandb.login()
+        # Log into Weights & Biases
+        wandb_key = get_secret('WANDB_API_KEY')
+        if wandb_key:
+            wandb.login(key=wandb_key)
+        else:
+            wandb.login() # automatically looks for WANDB_API_KEY environment variable, which must be preset)
 
     '''
     train_eval: model training and validation loop
@@ -81,6 +86,7 @@ class Trainer():
                 'total_params': self.total_params,
                 'trainable_params': self.trainable_params,
                 'dataset': self.dataset.dataset_id,
+                'synthetic_labels': self.dataset.synthetic_labels,
                 'classes': self.dataset.num_labels,
                 'batch_size': self.batch_size,
                 'epochs': self.num_epochs,

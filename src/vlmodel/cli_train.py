@@ -17,6 +17,7 @@ parser.add_argument('--lr', type=float, default=1e-4)
 parser.add_argument('--device', type=str)
 parser.add_argument('-s', '--save', action='store_true')
 parser.add_argument('-v', '--verbose', action='store_true')
+parser.add_argument('--labels', type=str) # Path to the training labels
 
 # Parse training arguments
 args = parser.parse_args()
@@ -31,8 +32,10 @@ print(save)
 verbose = args.verbose
 gcp = False
 seed = 42
+if parser.labels: label_dir = args.labels
+else: label_dir = 'texts_v1.json'
 
-dataset = BugBitePairedDataset(on_gcp=gcp, seed=seed)
+dataset = BugBitePairedDataset(on_gcp=gcp, seed=seed, text_fname=label_dir)
 model_class = model_classes[model_id]
 model = model_class(num_labels=dataset.num_labels, freeze_params=True)
 config = {

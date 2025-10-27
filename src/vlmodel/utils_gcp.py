@@ -1,4 +1,4 @@
-from google.cloud import storage
+from google.cloud import storage, secretmanager
 from tqdm import tqdm
 import os
 
@@ -53,3 +53,16 @@ def download_directory_from_gcp(storage_dir, local_dir='/app/'):
         print(f'‼️ Skipping download from GCP (misssing GCP_BUCKET_NAME)')
     else:
         print(f'‼️ Skipping download from GCP (misssing GCP_PROJECT)')
+
+def get_secret(secret_id: str) -> str:
+    """Retrieve a secret from Google Secret Manager."""
+    try:
+        client = secretmanager.SecretManagerServiceClient()
+        name = f"projects/{os.getenv('GCP_PROJECT')}/secrets/{secret_id}/versions/latest"
+        response = client.access_secret_version(name=name)
+        if response.payload.data:
+            return response.payload.data.decode("UTF-8")
+        return ""
+    except Exception as e:
+        print(f'⚠️ Failed to retrieve secret {secret_id}: {e}')
+        return ""
