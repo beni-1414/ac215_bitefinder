@@ -1,5 +1,6 @@
 from torch.utils.data import Dataset, DataLoader
 import torch
+import os
 import torch.optim as optim
 from torch import nn
 from tqdm import tqdm
@@ -69,10 +70,10 @@ class Trainer():
         # Log into Weights & Biases
         wandb_key = get_secret('WANDB_API_KEY')
         if wandb_key:
-            wandb.login(key=wandb_key)
+            os.environ["WANDB_API_KEY"] = wandb_key
         else:
-            wandb.login() # automatically looks for WANDB_API_KEY environment variable, which must be preset)
-
+            pass # automatically looks for WANDB_API_KEY environment variable, which must be preset)
+        wandb.login()
     '''
     train_eval: model training and validation loop
     '''
