@@ -2,7 +2,7 @@ import torch
 from PIL import Image
 from utils_save import *
 from utils_gcp import *
-from model import *
+from src.vlmodel.package.trainer.model import *
 import argparse
 
 gcp = False

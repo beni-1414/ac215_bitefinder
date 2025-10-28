@@ -1,9 +1,9 @@
 import torch
 import torch.optim as optim
-from trainer import Trainer
-from model import *
-from dataset import BugBitePairedDataset
-from model import *
+from src.vlmodel.package.trainer.trainer import Trainer
+from src.vlmodel.package.trainer.model import *
+from src.vlmodel.package.trainer.dataset import BugBitePairedDataset
+from src.vlmodel.package.trainer.model import *
 from utils_dataloader import *
 from utils_save import *
 import argparse
