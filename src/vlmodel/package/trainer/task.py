@@ -39,6 +39,8 @@ def main():
                         help='Enable verbose output')
     parser.add_argument('--gcp', action='store_true',
                         help='Flag to indicate data is on GCP (will download from bucket)')
+    parser.add_argument('--run_id', type=str, default='default_run',
+                        help='Identifier for the training run')
     
     # Parse training arguments
     args = parser.parse_args()
@@ -97,6 +99,7 @@ def main():
         device=device,
         seed=args.seed,
         verbose=args.verbose,
+        run_id=args.run_id
     )
     
     # Train and evaluate
@@ -106,9 +109,9 @@ def main():
     # Save model and configuration
     print(f"\n💾 Saving model to {args.output_dir}...")
     from trainer.utils_save import save_config, save_model
-    save_config(config, dir=args.output_dir, to_gcp=args.gcp)
-    save_model(model, dir=args.output_dir, to_gcp=args.gcp)
-    
+    save_config(config, dir=args.output_dir, to_gcp=args.gcp, run_id=args.run_id)
+    save_model(model, dir=args.output_dir, to_gcp=args.gcp, run_id=args.run_id)
+
     print(f"\n✅ Training completed successfully!")
 
 
