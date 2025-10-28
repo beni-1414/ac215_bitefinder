@@ -37,7 +37,7 @@ It’s written for Windows (PowerShell/CMD) + Ubuntu VMs, but notes for other se
 In Windows PowerShell/CMD:
 
 ```bat
-gcloud compute instances describe <VM_NAME> --zone <ZONE> --format="get(networkInterfaces[0].accessConfigs[0].natIP)"
+gcloud compute instances describe instance-20251015-024304 --zone us-central1-a --format="get(networkInterfaces[0].accessConfigs[0].natIP)"
 ```
 
 In MAC/Linux terminal:
