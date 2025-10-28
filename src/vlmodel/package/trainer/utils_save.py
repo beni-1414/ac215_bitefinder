@@ -1,6 +1,6 @@
 import os
 import torch
-from utils_gcp import *
+from trainer.utils_gcp import *
 
 save_dir = 'trained_model'
 

@@ -4,9 +4,9 @@ import torch.optim as optim
 from torch import nn
 from tqdm import tqdm
 import wandb
-from utils_wandb import *
-from utils_dataloader import *
-from utils_gcp import get_secret
+from trainer.utils_wandb import *
+from trainer.utils_dataloader import *
+from trainer.utils_gcp import get_secret
 
 '''
 Trainer: experiment handler for model training and evaluation with integrated W&B logging

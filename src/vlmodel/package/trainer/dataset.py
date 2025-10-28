@@ -4,7 +4,7 @@ from PIL import Image
 import os
 import torch
 import json
-from utils_gcp import *
+from trainer.utils_gcp import *
 
 '''
 Assumes the following directory structure:
