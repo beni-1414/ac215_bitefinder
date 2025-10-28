@@ -63,20 +63,10 @@ This script will:
 
 ## Step 2: Submit a Vertex AI Training Job
 
-### Option A: Using JSON Configuration (Recommended)
-
-The easiest way is to use the pre-configured JSON file:
+### Option A: Run the sh file (Recommended)
 
 ```bash
 bash submit-training-job.sh
-```
-
-Or manually:
-```bash
-gcloud ai custom-jobs create \
-  --region=us-central1 \
-  --config=vertex-ai-training-job.json \
-  --project=bitefinder-474614
 ```
 
 ### Option B: Using Python SDK:
@@ -114,41 +104,6 @@ job.run(
 )
 ```
 
-### Customizing vertex-ai-training-job.json
-
-You can edit `vertex-ai-training-job.json` to customize:
-- Machine type and GPU configuration
-- Training arguments (epochs, batch size, learning rate, etc.)
-- Service account
-- Environment variables
-
-```json
-{
-  "displayName": "bitefinder-vlmodel-training",
-  "jobSpec": {
-    "workerPoolSpecs": [{
-      "machineSpec": {
-        "machineType": "n1-standard-4",
-        "acceleratorType": "NVIDIA_TESLA_T4",
-        "acceleratorCount": 1
-      },
-      "replicaCount": 1,
-      "pythonPackageSpec": {
-        "executorImageUri": "us-docker.pkg.dev/vertex-ai/training/pytorch-gpu.1-13:latest",
-        "packageUris": ["gs://bitefinder-data/vlmodel_trainer.tar.gz"],
-        "pythonModule": "trainer.task",
-        "args": ["--model=clip", "--epochs=10", "--batch_size=32", "--lr=0.0001", "--gcp", "--verbose"],
-        "env": [
-          {"name": "GCP_PROJECT", "value": "bitefinder-474614"},
-          {"name": "GCP_BUCKET_NAME", "value": "gs://bitefinder-data"}
-        ]
-      }
-    }],
-    "serviceAccount": "bitefinder-training@bitefinder-474614.iam.gserviceaccount.com"
-  }
-}
-```
-
 ## Training Arguments
 
 The `task.py` script accepts the following arguments:
@@ -166,6 +121,7 @@ The `task.py` script accepts the following arguments:
 | `--seed` | int | `42` | Random seed for reproducibility |
 | `--verbose` | flag | False | Enable verbose output |
 | `--gcp` | flag | False | Download data from GCP bucket |
+| `--run_id` | str | `default_run` | Ensure same name in GCP and WandB |
 
 ## Environment Variables for Training Job
 
