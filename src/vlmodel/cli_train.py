@@ -1,11 +1,11 @@
 import torch
 import torch.optim as optim
-from src.vlmodel.package.trainer.trainer import Trainer
+from src.vlmodel.package.trainer.trainer_module import Trainer
 from src.vlmodel.package.trainer.model import *
 from src.vlmodel.package.trainer.dataset import BugBitePairedDataset
 from src.vlmodel.package.trainer.model import *
-from utils_dataloader import *
-from utils_save import *
+from src.vlmodel.package.trainer.utils_dataloader import *
+from vlmodel.package.trainer.utils_save import *
 import argparse
 
 # Define training arguments
