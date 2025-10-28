@@ -8,15 +8,20 @@ echo "🚀 Submitting Vertex AI training job..."
 
 # Source environment variables
 source ../../env.dev
+export RUN_ID=labels_v2_$(date +%Y%m%d_%H%M%S)
 
 # Authenticate with Google Cloud, comment this line if running inside GCP VM
-gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+# gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
 
 # Submit the job
 gcloud ai custom-jobs create \
-    --region=us-central1 \
-    --config=vertex-ai-training-job.json \
-    --project=${GCP_PROJECT}
+  --region=us-central1 \
+  --display-name="bitefinder-vlmodel-training-${RUN_ID}" \
+  --python-package-uris="gs://bitefinder-data/vlmodel_trainer.tar.gz" \
+  --worker-pool-spec=machine-type=e2-standard-4,replica-count=1,executor-image-uri=us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-17.py310:latest,python-module=trainer.task \
+  --args="--model=clip","--epochs=10","--batch_size=32","--labels=texts_v2.json","--lr=0.0001","--gcp","--verbose","--run_id=${RUN_ID}"
+
+
 
 echo ""
 echo "✅ Training job submitted successfully!"
