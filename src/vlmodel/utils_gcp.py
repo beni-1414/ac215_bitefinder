@@ -54,6 +54,26 @@ def download_directory_from_gcp(storage_dir, local_dir='/app/'):
     else:
         print(f'‼️ Skipping download from GCP (misssing GCP_PROJECT)')
 
+def upload_directory_to_gcp(local_dir, storage_dir):
+    if gcp_bucket_name and gcp_project:
+        try:
+            storage_client = storage.Client(project=gcp_project)
+            bucket = storage_client.bucket(gcp_bucket_name)
+            for root, _, files in os.walk(local_dir):
+                for file in files:
+                    local_path = os.path.join(root, file)
+                    relative_path = os.path.relpath(local_path, local_dir)
+                    blob_path = os.path.join(storage_dir, relative_path)
+                    blob = bucket.blob(blob_path)
+                    blob.upload_from_filename(local_path)
+            print(f'✅ Uploaded {local_dir} to GCP bucket {gcp_bucket_name}')
+        except Exception as e:
+            print(f'⚠️ Failed to upload to GCP: {e}')
+    elif gcp_bucket_name is None:
+        print(f'‼️ Skipping upload to GCP (misssing GCP_BUCKET_NAME)')
+    else:
+        print(f'‼️ Skipping upload to GCP (misssing GCP_PROJECT)')
+
 def get_secret(secret_id: str) -> str:
     """Retrieve a secret from Google Secret Manager."""
     try:

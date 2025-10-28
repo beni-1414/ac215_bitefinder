@@ -33,10 +33,12 @@ class Trainer():
             device='cpu',
             seed=None,
             verbose=False,
+            run_id="default_run"
     ):
         self.model = model
         self.model_id = model_id
         self.processor = model.processor
+        self.run_id = run_id
         
         self.total_params = sum(p.numel() for p in self.model.parameters()) # Count parameters to log model complexity
         self.trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
@@ -80,6 +82,7 @@ class Trainer():
             entity=wandb_team, # Set the team where your project will be logged
             project=wandb_project, # Set the project where this run will be logged
             settings=wandb.Settings(quiet=True),
+            name=self.run_id,
             config = {
                 'model': self.model_id,
                 'pretrained': self.model.pretrained,
