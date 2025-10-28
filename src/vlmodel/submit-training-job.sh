@@ -18,7 +18,7 @@ gcloud ai custom-jobs create \
   --region=us-central1 \
   --display-name="bitefinder-vlmodel-training-${RUN_ID}" \
   --python-package-uris="gs://bitefinder-data/vlmodel_trainer.tar.gz" \
-  --worker-pool-spec=machine-type=e2-standard-4,replica-count=1,executor-image-uri=us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-17.py310:latest,python-module=trainer.task \
+  --worker-pool-spec=machine-type=e2-standard-4,replica-count=1,executor-image-uri=us-docker.pkg.dev/vertex-ai/training/pytorch-xla.2-4.py310:latest,python-module=trainer.task \
   --args="--model=clip","--epochs=10","--batch_size=32","--labels=texts_v2.json","--lr=0.0001","--gcp","--verbose","--run_id=${RUN_ID}"
 
 
