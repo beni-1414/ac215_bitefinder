@@ -1,0 +1,25 @@
+workerPoolSpecs:
+  - machineSpec:
+      machineType: e2-standard-4
+    replicaCount: 1
+    pythonPackageSpec:
+      executorImageUri: us-docker.pkg.dev/vertex-ai/training/pytorch-xla.2-4.py310:latest
+      packageUris:
+        - gs://bitefinder-data/vlmodel_trainer.tar.gz
+      pythonModule: trainer.task
+      args:
+        - --model=clip
+        - --epochs=10
+        - --batch_size=32
+        - --labels=texts_v2.json
+        - --lr=0.0001
+        - --gcp
+        - --verbose
+        - --run_id=${RUN_ID}
+      env:
+        - name: GCP_PROJECT
+          value: ${GCP_PROJECT}
+        - name: GCP_BUCKET_NAME
+          value: ${GCP_BUCKET_NAME}
+        - name: RUN_ID
+          value: ${RUN_ID}
