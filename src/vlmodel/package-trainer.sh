@@ -9,7 +9,8 @@ echo "📦 Packaging trainer for Google Cloud..."
 source ../../env.dev
 
 # Define package directory
-PACKAGE_DIR="trainer"
+PACKAGE_DIR="package/trainer"
+PACKAGE_BASE_DIR="package"
 
 # Create package directory if it doesn't exist
 mkdir -p $PACKAGE_DIR
@@ -24,18 +25,6 @@ cp -v utils_gcp.py $PACKAGE_DIR/
 cp -v utils_save.py $PACKAGE_DIR/
 cp -v utils_wandb.py $PACKAGE_DIR/
 
-# Ensure __init__.py and task.py exist (they should already be there)
-if [ ! -f "$PACKAGE_DIR/__init__.py" ]; then
-    echo "# Package initialization for trainer module" > $PACKAGE_DIR/__init__.py
-fi
-
-# Verify task.py exists
-if [ ! -f "$PACKAGE_DIR/task.py" ]; then
-    echo "❌ Error: task.py not found in $PACKAGE_DIR/"
-    echo "Please ensure task.py has been created in the trainer directory"
-    exit 1
-fi
-
 echo "✅ All modules copied to $PACKAGE_DIR/"
 
 # Clean up any existing tar files
@@ -44,7 +33,7 @@ rm -f trainer.tar trainer.tar.gz
 
 # Create tar archive of the package
 echo "📦 Creating tar archive..."
-tar cvf trainer.tar $PACKAGE_DIR/
+tar cvf trainer.tar $PACKAGE_BASE_DIR/
 
 # Compress the archive
 echo "🗜️  Compressing archive..."
@@ -57,4 +46,17 @@ gsutil cp trainer.tar.gz $GCP_BUCKET_NAME/vlmodel_trainer.tar.gz
 echo "✅ Package uploaded to $GCP_BUCKET_NAME/vlmodel_trainer.tar.gz"
 echo ""
 echo "🎯 To use this package with Vertex AI Custom Training, reference:"
-echo "   gs://${GCP_BUCKET_NAME#gs://}/vlmodel_trainer.tar.gz"
+echo "   $GCP_BUCKET_NAME/vlmodel_trainer.tar.gz"
+
+# Remove copied files from the package directory (but keep the folder itself)
+echo "🧽 Cleaning working directory..."
+rm -f \
+  "$PACKAGE_DIR/trainer_module.py" \
+  "$PACKAGE_DIR/model.py" \
+  "$PACKAGE_DIR/dataset.py" \
+  "$PACKAGE_DIR/utils_dataloader.py" \
+  "$PACKAGE_DIR/utils_gcp.py" \
+  "$PACKAGE_DIR/utils_save.py" \
+  "$PACKAGE_DIR/utils_wandb.py"
+
+rm -f trainer.tar.gz
