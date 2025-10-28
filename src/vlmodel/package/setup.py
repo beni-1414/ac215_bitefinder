@@ -20,5 +20,5 @@ setup(
         'wandb>=0.22.2',
         'pillow',
     ],
-    python_requires='>=3.12',
+    python_requires='>=3.10',
 )
