@@ -17,7 +17,7 @@ rm -f trainer.tar trainer.tar.gz
 
 # Create tar archive of the package
 echo "📦 Creating tar archive..."
-tar cvf trainer.tar $PACKAGE_BASE_DIR/
+tar cvf trainer.tar -C $PACKAGE_BASE_DIR . # So setup.py is at the root of the archive
 
 # Compress the archive
 echo "🗜️  Compressing archive..."
@@ -25,11 +25,11 @@ gzip trainer.tar
 
 # Upload to Google Cloud Storage
 echo "☁️  Uploading to GCS..."
-gsutil cp trainer.tar.gz $GCP_BUCKET_NAME/vlmodel_trainer.tar.gz
+gsutil cp trainer.tar.gz $GCS_BUCKET_URI/vlmodel_trainer.tar.gz
 
-echo "✅ Package uploaded to $GCP_BUCKET_NAME/vlmodel_trainer.tar.gz"
+echo "✅ Package uploaded to $GCS_BUCKET_URI/vlmodel_trainer.tar.gz"
 echo ""
 echo "🎯 To use this package with Vertex AI Custom Training, reference:"
-echo "   $GCP_BUCKET_NAME/vlmodel_trainer.tar.gz"
+echo "   $GCS_BUCKET_URI/vlmodel_trainer.tar.gz"
 
 rm -f trainer.tar.gz

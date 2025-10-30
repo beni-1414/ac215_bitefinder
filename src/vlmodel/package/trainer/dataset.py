@@ -36,7 +36,6 @@ BugBitePairedDataset: labeled paired image-text dataset for bug bite images + pa
 - data_split: which dataset split to use ('training' or 'testing')
 - text_fname: name of text file containing patient narratives for each label
 - image_extens: tuple of allowed image file extensions
-- on_gcp: whether data is stored on cloud (if so, will download from GCP bucket, otherwise will load from local filesystem)
 - seed: random seed for reproducibility
 '''
 class BugBitePairedDataset(Dataset):
@@ -48,7 +47,6 @@ class BugBitePairedDataset(Dataset):
             data_split='training', 
             text_fname='texts.json',
             image_extens=('.jpg', '.jpeg'),
-            on_gcp=False,
             seed=None
     ):        
         # Dataset of (image filepath, text, label) tuples
@@ -58,9 +56,6 @@ class BugBitePairedDataset(Dataset):
         # Set seed for reproducibility in dataset creation
         if seed is not None: random.seed(seed)
         
-        # Download data from GCP bucket
-        if on_gcp: download_directory_from_gcp(data_root_dir)
-
         # Build image and text directory paths
         image_dir = data_root_dir+image_root_dir+data_split+'/'
         text_dir = data_root_dir+text_root_dir+data_split+'/'

@@ -19,7 +19,9 @@ workerPoolSpecs:
       env:
         - name: GCP_PROJECT
           value: ${GCP_PROJECT}
-        - name: GCP_BUCKET_NAME
-          value: ${GCP_BUCKET_NAME}
+        - name: GCS_BUCKET_URI
+          value: ${GCS_BUCKET_URI}
         - name: RUN_ID
           value: ${RUN_ID}
+        - name: WANDB_API_KEY
+          value: ${WANDB_API_KEY}

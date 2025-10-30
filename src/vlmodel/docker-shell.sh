@@ -12,9 +12,10 @@ docker build -t $IMAGE_NAME -f Dockerfile .
 docker run --rm --name $IMAGE_NAME -ti \
     -v "$(pwd)":/app \
     -v "$(pwd)"/$SECRETS_DIR:/secrets \
-    -v "$(pwd)"/$DATA_DIR:/app/data \
     -e GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS \
     -e GCP_PROJECT=$GCP_PROJECT \
     -e GCP_BUCKET_NAME=$GCP_BUCKET_NAME \
+    -e GCS_BUCKET_URI=$GCS_BUCKET_URI \
     -e WANDB_API_KEY=$WANDB_API_KEY \
     $IMAGE_NAME
+    # -v "$(pwd)"/$DATA_DIR:/app/data \
