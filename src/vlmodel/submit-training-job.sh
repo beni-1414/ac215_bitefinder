@@ -11,17 +11,17 @@ source ../../env.dev
 export RUN_ID=labels_v2_$(date +%Y%m%d_%H%M%S)
 
 # Authenticate with Google Cloud, comment this line if running inside GCP VM
-gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+# gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
 
 # produce a resolved config with actual values baked in
 envsubst < job_config.yaml > job_config_resolved.yaml
 
 gcloud ai custom-jobs create \
-  --region=us-central1 \
+  --region=$GCP_REGION \
   --display-name="bitefinder-vlmodel-training-${RUN_ID}" \
   --config=job_config_resolved.yaml \
-  --python-package-uris=$PYTHON_PACKAGE_URI \
-  --service-account=irith-service-account@bitefinder-irith.iam.gserviceaccount.com
+  --python-package-uris=$PYTHON_PACKAGE_URI
+  # --service-account=irith-service-account@bitefinder-irith.iam.gserviceaccount.com
 
 echo ""
 echo "✅ Training job submitted successfully!"

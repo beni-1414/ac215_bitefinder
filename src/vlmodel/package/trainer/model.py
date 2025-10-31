@@ -19,7 +19,7 @@ class CLIPForBugBiteClassification(nn.Module):
     def __init__(self, num_labels, pretrained='openai/clip-vit-base-patch32', freeze_params=True, dropout_prob=0.1):
         super().__init__()
         self.pretrained = pretrained
-        self.model = CLIPModel.from_pretrained(self.pretrained) # Pre-trained CLIP model
+        self.model = CLIPModel.from_pretrained(self.pretrained, use_safetensors=True, trust_remote_code=True) # Pre-trained CLIP model
         self.processor = CLIPProcessor.from_pretrained(self.pretrained) # Pre-trained CLIP processor
         self.classifier = nn.Sequential( # Classification head (linear layer) to project image + text embeddings (image_embeds + text_embeds = projection_dim * 2) to label space
             nn.Dropout(dropout_prob),
@@ -61,7 +61,7 @@ class ViLTForBugBiteClassification(nn.Module):
     def __init__(self, num_labels, pretrained='dandelin/vilt-b32-mlm', freeze_params=True, dropout_prob=0.1):
         super().__init__()
         self.pretrained = pretrained
-        self.model = ViltModel.from_pretrained(self.pretrained) # Pre-trained ViLT model
+        self.model = ViltModel.from_pretrained(self.pretrained, use_safetensors=True, trust_remote_code=True) # Pre-trained ViLT model
         self.processor = ViltProcessor.from_pretrained(self.pretrained) # Pre-trained ViLT processor
         self.classifier = nn.Sequential( # Classification head (linear layer) to project encoding space (of hidden_size dimensionality) to label space
             nn.Dropout(dropout_prob),
