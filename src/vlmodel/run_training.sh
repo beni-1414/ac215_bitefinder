@@ -22,7 +22,7 @@ gcloud ai custom-jobs create \
   --project=$GCP_PROJECT \
   --config=job_config_resolved.yaml \
   --python-package-uris=$PYTHON_PACKAGE_URI \
-  --service-account=irith-service-account@bitefinder-irith.iam.gserviceaccount.com
+  --service-account=$SERVICE_ACCOUNT_EMAIL
 
 echo ""
 echo "✅ Training job submitted successfully!"
