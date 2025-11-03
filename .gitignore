@@ -210,4 +210,4 @@ __marimo__/
 data/
 datastore/
 secrets/
-trained_model/
+artifacts/
