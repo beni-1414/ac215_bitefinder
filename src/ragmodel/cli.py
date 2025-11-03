@@ -1,42 +1,37 @@
 import os
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
+
 import argparse
 import pandas as pd
 import json
 import time
 import glob
 import hashlib
-import chromadb
 
-# Vertex AI
-from google import genai
-from google.genai import types
-from google.genai.types import Content, Part, GenerationConfig, ToolConfig
-from google.genai import errors
+import google.generativeai as genai
 
-# Langchain
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from semantic_splitter import SemanticChunker
+# Langchain text splitters
+from langchain_text_splitters import CharacterTextSplitter, RecursiveCharacterTextSplitter
 import agent_tools
 
-# Setup
-GCP_PROJECT = os.environ["GCP_PROJECT"]
-GCP_LOCATION = "us-central1"
-EMBEDDING_MODEL = "text-embedding-004"
-EMBEDDING_DIMENSION = 256
-GENERATIVE_MODEL = "gemini-2.0-flash-001"
+# Pinecone adapter - handles vector database operations
+from pinecone_adapter import upsert_embeddings, query_by_vector
+
+# Configure Google Generative AI (Gemini) with API key
+genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
+
+# Model configuration
+EMBEDDING_MODEL = "text-embedding-004"      # Google's text embedding model
+GENERATIVE_MODEL = "models/gemini-2.5-flash"  # Gemini model for text generation
+EMBEDDING_DIMENSION = 768                   # Must match Pinecone index dimension
+
+# File paths
 INPUT_FOLDER = "input-datasets"
 OUTPUT_FOLDER = "outputs"
-CHROMADB_HOST = "llm-rag-chromadb"
-CHROMADB_PORT = 8000
 
-#############################################################################
-#                       Initialize the LLM Client                           #
-llm_client = genai.Client(
-    vertexai=True, project=GCP_PROJECT, location=GCP_LOCATION)
-#############################################################################
-
-# Initialize the GenerativeModel with specific system instructions
+# System instruction for the LLM - defines its role and constraints
 SYSTEM_INSTRUCTION = """
 You are an AI assistant specialized in bug bites. Your responses are based solely on the information provided in the text chunks given to you. Do not use any external knowledge or make assumptions beyond what is explicitly stated in these chunks.
 
@@ -56,8 +51,11 @@ Remember:
 
 Your goal is to provide accurate, helpful information about bug bites based solely on the content of the text chunks you receive with each query.
 """
+
+# Metadata mappings for bug types
+# Maps file names to canonical bug labels used in Pinecone metadata filtering
 bug_mappings = {
-    "ant bites": {"bug": "ant"},#, "year": 2022},
+    "ant bites": {"bug": "ant"},
     "bed bug bites": {"bug": "bed bug"},
     "chigger bites": {"bug": "chigger"},
     "flea bites": {"bug": "flea"},
@@ -66,67 +64,140 @@ bug_mappings = {
     "tick bites": {"bug": "tick"}
 }
 
+# Initialize the generative model with system instructions
+gen_model = genai.GenerativeModel(
+    model_name=GENERATIVE_MODEL,
+    system_instruction=SYSTEM_INSTRUCTION,
+)
 
-def generate_query_embedding(query):
-    kwargs = {
-        "output_dimensionality": EMBEDDING_DIMENSION
-    }
-    response = llm_client.models.embed_content(
+### helper functions
+
+def _get_semantic_chunker():
+    """Lazy import to avoid hard dependency when not using semantic splitting."""
+    from semantic_splitter import SemanticChunker
+    return SemanticChunker
+
+
+def _normalize_conf_to_percent(conf: float) -> float:
+    """
+    Normalize confidence value to percentage (0-100).
+    Accepts both 0-1 range and 0-100 range, returns 0-100 clipped.
+    """
+    pct = conf * 100.0 if 0.0 <= conf <= 1.0 else conf
+    try:
+        pct = float(pct)
+    except Exception:
+        pct = 0.0
+    return max(0.0, min(100.0, pct))
+
+
+### embedding functions
+
+def generate_query_embedding(query: str):
+    """
+    Generate embeddings for search queries.
+    
+    Uses Google's text-embedding-004 model with task_type="retrieval_query"
+    which optimizes embeddings for similarity search queries.
+    
+    Returns:
+        List of floats: 768-dimensional embedding vector
+    """
+    res = genai.embed_content(
         model=EMBEDDING_MODEL,
-        contents=query,
-        config=types.EmbedContentConfig(**kwargs)
+        content=query,
+        task_type="retrieval_query",
+        output_dimensionality=EMBEDDING_DIMENSION,
     )
-    return response.embeddings[0].values
+    return res["embedding"]
 
 
-def generate_text_embeddings(chunks, dimensionality: int = 256, batch_size=250, max_retries=5, retry_delay=5):
-    # Max batch size is 250 for Vertex AI
+def generate_text_embeddings(chunks, dimensionality: int = 768, batch_size: int = 250,
+                             max_retries: int = 5, retry_delay: int = 5):
+    """
+    Generate embeddings for document chunks.
+    
+    Uses Google's text-embedding-004 model with task_type="retrieval_document"
+    which optimizes embeddings for documents to be retrieved.
+    
+    Note: Unlike ChromaDB which can batch embed automatically, process
+    chunks one at a time here with retry logic for robustness.
+    
+    Args:
+        chunks: List of text strings to embed
+        dimensionality: Output dimension (must match Pinecone index)
+        batch_size: Number of chunks to process before sleeping
+        max_retries: Maximum retry attempts on failure
+        retry_delay: Initial delay between retries (exponential backoff)
+    
+    Returns:
+        List of embeddings (768-dimensional vectors)
+    """
     all_embeddings = []
-
     for i in range(0, len(chunks), batch_size):
-        batch = chunks[i:i+batch_size]
-
-        # Retry logic with exponential backoff
-        retry_count = 0
-        while retry_count <= max_retries:
-            try:
-                response = llm_client.models.embed_content(
-                    model=EMBEDDING_MODEL,
-                    contents=batch,
-                    config=types.EmbedContentConfig(
-                        output_dimensionality=dimensionality),
-                )
-                all_embeddings.extend(
-                    [embedding.values for embedding in response.embeddings])
-                break
-
-            except errors.APIError as e:
-                retry_count += 1
-                if retry_count > max_retries:
-                    print(
-                        f"Failed to generate embeddings after {max_retries} attempts. Last error: {str(e)}")
-                    raise
-
-                # Calculate delay with exponential backoff
-                wait_time = retry_delay * (2 ** (retry_count - 1))
-                print(
-                    f"API error (code: {e.code}): {e.message}. Retrying in {wait_time} seconds (attempt {retry_count}/{max_retries})...")
-                time.sleep(wait_time)
-
+        batch = chunks[i:i + batch_size]
+        for text in batch:
+            retries = 0
+            while True:
+                try:
+                    res = genai.embed_content(
+                        model=EMBEDDING_MODEL,
+                        content=text,
+                        task_type="retrieval_document",
+                        output_dimensionality=EMBEDDING_DIMENSION,
+                    )
+                    all_embeddings.append(res["embedding"])
+                    break
+                except Exception as e:
+                    retries += 1
+                    if retries > max_retries:
+                        print(f"Failed to embed after {max_retries} attempts: {e}")
+                        raise
+                    wait = retry_delay * (2 ** (retries - 1))
+                    print(f"Embed error: {e}. Retrying in {wait}s...")
+                    time.sleep(wait)
     return all_embeddings
 
-# book --> 'type' of bite, author --> bug
-def load_text_embeddings(df, collection, batch_size=500):
 
-    # Generate ids
+### pinecone data loading
+
+def load_text_embeddings(df, collection, batch_size=500):
+    """
+    Load embeddings into Pinecone vector database.
+    
+    PINECONE vs CHROMADB DIFFERENCES:
+    
+    1. DATA STRUCTURE:
+       - ChromaDB: Separate fields for ids, documents, embeddings, metadatas
+         collection.add(ids=[], documents=[], embeddings=[], metadatas=[])
+       
+       - Pinecone: Unified vector format with metadata containing text
+         upsert([{"id": ..., "values": [...], "metadata": {"text": ...}}])
+    
+    2. TEXT STORAGE:
+       - ChromaDB: Has dedicated "documents" field for full text
+       - Pinecone: Must store text in metadata["text"] field
+    
+    3. CONNECTION:
+       - ChromaDB: Pass collection object
+       - Pinecone: Uses global index from environment variables
+    
+    4. UPSERT vs ADD:
+       - ChromaDB: collection.add() throws error on duplicate IDs
+       - Pinecone: upsert() updates existing or creates new (idempotent)
+    
+    Args:
+        df: DataFrame with columns: id, chunk, type, embedding
+        collection: Unused (kept for API compatibility)
+        batch_size: Number of vectors to upsert at once
+    """
+    # Generate unique IDs using hash of type + index
     df["id"] = df.index.astype(str)
-    hashed_books = df["type"].apply(
-        lambda x: hashlib.sha256(x.encode()).hexdigest()[:16])
+    hashed_books = df["type"].apply(lambda x: hashlib.sha256(x.encode()).hexdigest()[:16])
     df["id"] = hashed_books + "-" + df["id"]
 
-    metadata = {
-        "type": df["type"].tolist()[0] 
-    }
+    # Build shared metadata for all chunks from this file
+    metadata = {"type": df["type"].tolist()[0]}
     if metadata["type"] in bug_mappings:
         bug_mapping = bug_mappings[metadata["type"]]
         metadata["bug"] = bug_mapping["bug"]
@@ -134,38 +205,51 @@ def load_text_embeddings(df, collection, batch_size=500):
     # Process data in batches
     total_inserted = 0
     for i in range(0, df.shape[0], batch_size):
-        # Create a copy of the batch and reset the index
         batch = df.iloc[i:i+batch_size].copy().reset_index(drop=True)
 
         ids = batch["id"].tolist()
         documents = batch["chunk"].tolist()
-        metadatas = [metadata for item in batch["type"].tolist()]
+        # Replicate the same metadata dict for each vector
+        metadatas = [metadata for _ in batch["type"].tolist()]
         embeddings = batch["embedding"].tolist()
 
-        collection.add(
+        # Call Pinecone adapter to upsert vectors
+        # This replaces ChromaDB's collection.add()
+        upsert_embeddings(
             ids=ids,
-            documents=documents,
-            metadatas=metadatas,
-            embeddings=embeddings
+            texts=documents,      # Will be stored in metadata["text"]
+            metadatas=metadatas,  # Additional metadata for filtering
+            vectors=embeddings,   # 768-dimensional vectors
         )
+
         total_inserted += len(batch)
         print(f"Inserted {total_inserted} items...")
 
-    print(
-        f"Finished inserting {total_inserted} items into collection '{collection.name}'")
+    print(f"Finished inserting {total_inserted} items for type '{metadata['type']}'")
 
-# book_name --> bite_name
+
+### chunking functions
+
 def chunk(method="char-split"):
+    """
+    Split input text files into smaller chunks.
+    
+    Supports three chunking methods:
+    - char-split: Fixed character-based splitting with overlap
+    - recursive-split: Recursive splitting that respects document structure
+    - semantic-split: Semantic chunking based on meaning (uses embeddings)
+    
+    Outputs JSONL files with chunks for each bug type.
+    """
     print("chunk()")
 
-    # Make dataset folders
+    # Create output directory
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-    # Get the list of text file
+    # Get list of bug bite text files
     text_files = glob.glob(os.path.join(INPUT_FOLDER, "bugs", "*.txt"))
     print("Number of files to process:", len(text_files))
 
-    # Process     
     for text_file in text_files:
         print("Processing file:", text_file)
         filename = os.path.basename(text_file)
@@ -175,61 +259,64 @@ def chunk(method="char-split"):
             input_text = f.read()
 
         text_chunks = None
+        
         if method == "char-split":
             chunk_size = 350
             chunk_overlap = 20
-            # Init the splitter
             text_splitter = CharacterTextSplitter(
-                chunk_size=chunk_size, chunk_overlap=chunk_overlap, separator='', strip_whitespace=False)
-
-            # Perform the splitting
+                chunk_size=chunk_size, 
+                chunk_overlap=chunk_overlap, 
+                separator='', 
+                strip_whitespace=False
+            )
             text_chunks = text_splitter.create_documents([input_text])
             text_chunks = [doc.page_content for doc in text_chunks]
             print("Number of chunks:", len(text_chunks))
 
         elif method == "recursive-split":
             chunk_size = 350
-            # Init the splitter
-            text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=chunk_size)
-
-            # Perform the splitting
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size)
             text_chunks = text_splitter.create_documents([input_text])
             text_chunks = [doc.page_content for doc in text_chunks]
             print("Number of chunks:", len(text_chunks))
 
         elif method == "semantic-split":
-            # Init the splitter
-            text_splitter = SemanticChunker(
-                embedding_function=generate_text_embeddings)
-            # Perform the splitting
+            # Lazy import to avoid dependency when not using semantic splitting
+            SemanticChunker = _get_semantic_chunker()
+            text_splitter = SemanticChunker(embedding_function=generate_text_embeddings)
             text_chunks = text_splitter.create_documents([input_text])
-
             text_chunks = [doc.page_content for doc in text_chunks]
             print("Number of chunks:", len(text_chunks))
 
         if text_chunks is not None:
-            # Save the chunks
+            # Save chunks to JSONL file
             data_df = pd.DataFrame(text_chunks, columns=["chunk"])
             data_df["type"] = bite_name
             print("Shape:", data_df.shape)
             print(data_df.head())
 
             jsonl_filename = os.path.join(
-                OUTPUT_FOLDER, f"chunks-{method}-{bite_name}.jsonl")
+                OUTPUT_FOLDER, f"chunks-{method}-{bite_name}.jsonl"
+            )
             with open(jsonl_filename, "w") as json_file:
                 json_file.write(data_df.to_json(orient='records', lines=True))
 
 
 def embed(method="char-split"):
+    """
+    Generate embeddings for all chunks.
+    
+    Reads chunk JSONL files, generates embeddings using Google's
+    text-embedding-004 model, and saves to new JSONL files.
+    """
     print("embed()")
 
-    # Get the list of chunk files
+    # Get list of chunk files
     jsonl_files = glob.glob(os.path.join(
-        OUTPUT_FOLDER, f"chunks-{method}-*.jsonl"))
+        OUTPUT_FOLDER, f"chunks-{method}-*.jsonl"
+    ))
     print("Number of files to process:", len(jsonl_files))
 
-    # Process
     for jsonl_file in jsonl_files:
         print("Processing file:", jsonl_file)
 
@@ -237,19 +324,23 @@ def embed(method="char-split"):
         print("Shape:", data_df.shape)
         print(data_df.head())
 
-        chunks = data_df["chunk"].values
-        chunks = chunks.tolist()
+        chunks = data_df["chunk"].values.tolist()
+        
+        # Use smaller batch size for semantic splitting (more compute-intensive)
         if method == "semantic-split":
             embeddings = generate_text_embeddings(
-                chunks, EMBEDDING_DIMENSION, batch_size=15)
+                chunks, EMBEDDING_DIMENSION, batch_size=15
+            )
         else:
             embeddings = generate_text_embeddings(
-                chunks, EMBEDDING_DIMENSION, batch_size=100)
+                chunks, EMBEDDING_DIMENSION, batch_size=100
+            )
+        
         data_df["embedding"] = embeddings
 
-        time.sleep(5)
+        time.sleep(5)  # Rate limiting
 
-        # Save
+        # Save embeddings to new JSONL file
         print("Shape:", data_df.shape)
         print(data_df.head())
 
@@ -259,142 +350,109 @@ def embed(method="char-split"):
 
 
 def load(method="char-split"):
+    """
+    Load embeddings into Pinecone vector database.
+    
+    Reads embedding JSONL files and upserts all vectors into Pinecone.
+    The Pinecone index must already exist with dimension=768.
+    """
     print("load()")
 
-    # Clear Cache
-    chromadb.api.client.SharedSystemClient.clear_system_cache()
-
-    # Connect to chroma DB
-    client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
-
-    # Get a collection object from an existing collection, by name. If it doesn't exist, create it.
-    collection_name = f"{method}-collection"
-    print("Creating collection:", collection_name)
-
-    try:
-        # Clear out any existing items in the collection
-        client.delete_collection(name=collection_name)
-        print(f"Deleted existing collection '{collection_name}'")
-    except Exception:
-        print(f"Collection '{collection_name}' did not exist. Creating new.")
-
-    collection = client.create_collection(
-        name=collection_name, metadata={"hnsw:space": "cosine"})
-    print(f"Created new empty collection '{collection_name}'")
-    print("Collection:", collection)
-
-    # Get the list of embedding files
+    # Find all embedding files
     jsonl_files = glob.glob(os.path.join(
-        OUTPUT_FOLDER, f"embeddings-{method}-*.jsonl"))
+        OUTPUT_FOLDER, f"embeddings-{method}-*.jsonl"
+    ))
     print("Number of files to process:", len(jsonl_files))
 
-    # Process
+    total = 0
     for jsonl_file in jsonl_files:
         print("Processing file:", jsonl_file)
-
         data_df = pd.read_json(jsonl_file, lines=True)
         print("Shape:", data_df.shape)
         print(data_df.head())
 
-        # Load data
-        load_text_embeddings(data_df, collection)
+        # Upsert to Pinecone
+        load_text_embeddings(data_df, collection=None)
+        total += data_df.shape[0]
 
+    print(f"Finished inserting {total} total items into Pinecone index '{os.getenv('PINECONE_INDEX','')}'")
+
+
+### Query functions
 
 def query(method="char-split"):
-    print("load()")
+    """
+    Test query against Pinecone vector database.
+    
+    PINECONE vs CHROMADB QUERY DIFFERENCES:
+    
+    1. QUERY SYNTAX:
+       - ChromaDB: collection.query(query_embeddings=[...], n_results=10, 
+                                    where={...}, where_document={"$contains": "..."})
+       - Pinecone: query_by_vector(query_vec=..., top_k=10, 
+                                   metadata_filter={...}, contains_substring="...")
+    
+    2. METADATA FILTERING:
+       - ChromaDB: where={"bug": "mosquito"}
+       - Pinecone: metadata_filter={"bug": {"$eq": "mosquito"}}
+    
+    3. TEXT SEARCH:
+       - ChromaDB: Built-in where_document={"$contains": "text"}
+       - Pinecone: Custom post-processing with contains_substring parameter
+    
+    4. RESULTS FORMAT:
+       - ChromaDB: {"ids": [[...]], "documents": [[...]], "metadatas": [[...]]}
+       - Pinecone: Returns same format via adapter for compatibility
+    """
+    print("query()")
 
-    # Connect to chroma DB
-    client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
-
-    # Get a collection object from an existing collection, by name. If it doesn't exist, create it.
-    collection_name = f"{method}-collection"
-
-    query = "Prevention for mosquito bites?" #"How is tolminc cheese made?"
+    query = "Prevention for mosquito bites?"
     query_embedding = generate_query_embedding(query)
-    #print("Embedding values:", query_embedding) ## silence this for now
 
-    # Get the collection
-    collection = client.get_collection(name=collection_name)
+    # Optional lexical filter (mimics ChromaDB's where_document)
+    search_string = "prevent"
 
-    # # 1: Query based on embedding value
-    # results = collection.query(
-    # 	query_embeddings=[query_embedding],
-    # 	n_results=10
-    # )
-    # print("Query:", query)
-    # print("\n\nResults:", results)
-
-    # # 2: Query based on embedding value + metadata filter
-    # results = collection.query(
-    # 	query_embeddings=[query_embedding],
-    # 	n_results=10,
-    # 	where={"book":"The Complete Book of Cheese"}
-    # )
-    # print("Query:", query)
-    # print("\n\nResults:", results)
-
-    # # 3: Query based on embedding value + lexical search filter
-    # search_string = "Italian"
-    # results = collection.query(
-    # 	query_embeddings=[query_embedding],
-    # 	n_results=10,
-    # 	where_document={"$contains": search_string}
-    # )
-    # print("Query:", query)
-    # print("\n\nResults:", results)
-
-    # 4: Query based on embedding value + lexical search filter
-    search_string = "prevent"#"Italian"
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=10,
-        where={"type": "mosquito bites"},
-        where_document={"$contains": search_string}
+    results = query_by_vector(
+        query_vec=query_embedding,
+        top_k=10,
+        metadata_filter={"type": {"$eq": "mosquito bites"}},
+        contains_substring=search_string,
     )
+
     print("Query:", query)
     print("\n\nResults:", results)
 
-###
-def _normalize_conf_to_percent(conf: float) -> float:
-    """Accept 0–1 or 0–100. Return 0–100 clipped."""
-    pct = conf * 100.0 if 0.0 <= conf <= 1.0 else conf
-    try:
-        pct = float(pct)
-    except Exception:
-        pct = 0.0
-    return max(0.0, min(100.0, pct))
 
 def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: str = ""):
+    """
+    Interactive chat with RAG (Retrieval-Augmented Generation).
+    
+    1. Embeds user question
+    2. Retrieves relevant chunks from Pinecone filtered by bug type
+    3. Constructs prompt with retrieved context
+    4. Generates response using Gemini
+    
+    Args:
+        method: Chunking method used
+        symptoms: User-reported symptoms
+        conf: Confidence score from vision model (0-1 or 0-100)
+        bug_class: Bug type (e.g., "mosquito", "tick")
+    """
     print("chat()")
 
-    # Connect to chroma DB
-    client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
-    # Get a collection object from an existing collection, by name. If it doesn't exist, create it.
-    collection_name = f"{method}-collection"
-
-    #query = "How can I treat mosquito bites?"#"How is cheese made?"
-    #query_embedding = generate_query_embedding(query)
-    #print("Query:", query, "\n")
-
-    ###
     user_question = f"How can I treat {bug_class} bites? My symptoms: {symptoms}"
     query_embedding = generate_query_embedding(user_question)
     print("Query:", user_question, "\n")
 
-    #print("Embedding values:", query_embedding) ## silence for now
-    # Get the collection
-    collection = client.get_collection(name=collection_name)
-
-    # Query based on embedding value
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=10,
-        where = {"bug": bug_class}
+    # Retrieve top matches filtered by bug type
+    # Uses metadata filter on canonical "bug" field
+    results = query_by_vector(
+        query_vec=query_embedding,
+        top_k=10,
+        metadata_filter={"bug": {"$eq": bug_class}},
     )
-    #print("\n\nResults:", results) ## silence for now
 
-    #print(len(results["documents"][0])) ## silence for now
-
+    # Build prompt with context
     conf_pct = _normalize_conf_to_percent(conf)
     prompt = (
         f"A patient reported experiencing the following: {symptoms}.\n"
@@ -402,102 +460,69 @@ def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: 
         "What do you recommend they do to treat it?"
     )
 
-    INPUT_PROMPT = f"{prompt}\n" + "\n".join(results["documents"][0])
-    #INPUT_PROMPT = f"""
-	#{query}
-	#{"\n".join(results["documents"][0])}
-	#"""
+    input_prompt = f"{prompt}\n" + "\n".join(results["documents"][0])
 
-    #print("INPUT_PROMPT: ", INPUT_PROMPT)  ## silence for now
-    response = llm_client.models.generate_content(
-        model=GENERATIVE_MODEL, contents=INPUT_PROMPT
-    )
+    # Generate response
+    response = gen_model.generate_content(input_prompt)
     generated_text = response.text
 
     print("LLM Response:", generated_text)
 
 
-def get(method="char-split"):
-    print("get()")
-
-    # Connect to chroma DB
-    client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
-    # Get a collection object from an existing collection, by name. If it doesn't exist, create it.
-    collection_name = f"{method}-collection"
-
-    # Get the collection
-    collection = client.get_collection(name=collection_name)
-
-    # Get documents with filters
-    results = collection.get(
-        where={"type": "mosquito"},
-        limit=10
-    )
-    print("\n\nResults:", results)
-
-
-def agent(method="char-split"):
+def agent(method="char-split",
+          question: str = "Describe how I can prevent mosquito bites?",
+          where: dict | None = {"type": {"$eq": "mosquito bites"}},
+          contains: str | None = None,
+          top_k: int = 10):
+    """
+    Agent-based query with custom parameters.
+    
+    More flexible than chat() - allows custom filtering and retrieval parameters.
+    
+    Args:
+        method: Chunking method
+        question: User question
+        where: Metadata filter dict (Pinecone format)
+        contains: Optional substring to filter by
+        top_k: Number of results to retrieve
+    """
     print("agent()")
 
-    # Connect to chroma DB
-    client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
-    # Get a collection object from an existing collection, by name. If it doesn't exist, create it.
-    collection_name = f"{method}-collection"
-    # Get the collection
-    collection = client.get_collection(name=collection_name)
+    # Embed question
+    qvec = generate_query_embedding(question)
 
-    # User prompt  ######ccccccc
-    user_prompt_content = Content(
-        role="user",
-        parts=[
-            #Part(text="Describe where cheese making is important in Pavlos's book?"),
-            Part(text="Describe how I can prevent mosquito bites?"),
-        ],
+    # Retrieve from Pinecone with optional filters
+    results = query_by_vector(
+        query_vec=qvec,
+        top_k=top_k,
+        metadata_filter=where,
+        contains_substring=contains,
     )
 
-    # Step 1: Prompt LLM to find the tool(s) to execute to find the relevant chunks in vector db
-    print("user_prompt_content: ", user_prompt_content)
-    response = llm_client.models.generate_content(
-        model=GENERATIVE_MODEL,
-        contents=user_prompt_content,
-        config=types.GenerateContentConfig(
-            temperature=0,
-            tools=[agent_tools.cheese_expert_tool],
-            tool_config=types.ToolConfig(
-                function_calling_config=types.FunctionCallingConfig(
-                    mode="any"
-                )
-            )
-        )
+    # Build prompt from retrieved chunks
+    chunks = results.get("documents", [[]])[0]
+    if not chunks:
+        print("No chunks retrieved; try relaxing filters")
+        return
+    
+    context = "\n\n".join(chunks)
+
+    prompt = (
+        f"{SYSTEM_INSTRUCTION.strip()}\n\n"
+        f"user question:\n{question}\n\n"
+        f"context chunks:\n{context}\n\n"
+        "answer using only the context above. if info is missing, say you do not have enough information."
     )
-    print("LLM Response:", response)
 
-    # Step 2: Execute the function and send chunks back to LLM to answer get the final response
-    function_calls = [part.function_call for part in response.candidates[0].content.parts if part.function_call]
-    print("Function calls:", function_calls)
-    function_responses = agent_tools.execute_function_calls(
-        function_calls, collection, embed_func=generate_query_embedding)
-    if len(function_responses) == 0:
-        print("Function calls did not result in any responses...")
-    else:
-        # Call LLM with retrieved responses
-        response = llm_client.models.generate_content(
-            model=GENERATIVE_MODEL,
-            contents=[
-                user_prompt_content,  # User prompt
-                response.candidates[0].content,  # Function call response
-                Content(
-                    parts=function_responses
-                ),
-            ],
-            config=types.GenerateContentConfig(
-                tools=[agent_tools.cheese_expert_tool]
-            )
-        )
-        print("LLM Response:", response)
+    # Generate answer
+    resp = gen_model.generate_content(prompt)
+    print("LLM Response:", resp.text)
 
+
+### Main cli
 
 def main(args=None):
+    """Main entry point for CLI."""
     print("CLI Arguments:", args)
 
     if args.chunk:
@@ -513,73 +538,30 @@ def main(args=None):
         query(method=args.chunk_type)
 
     if args.chat:
-        ###
         symptoms = args.symptoms
         conf = args.conf
         bug_class = args.vision_class
-        chat(method=args.chunk_type,
-            symptoms=symptoms, 
-            conf=conf, 
-            bug_class=bug_class)
-
-    if args.get:
-        get(method=args.chunk_type)
+        chat(method=args.chunk_type, symptoms=symptoms, conf=conf, bug_class=bug_class)
 
     if args.agent:
         agent(method=args.chunk_type)
 
 
 if __name__ == "__main__":
-    # Generate the inputs arguments parser
-    # if you type into the terminal '--help', it will provide the description
-    parser = argparse.ArgumentParser(description="CLI")
+    parser = argparse.ArgumentParser(description="BiteFinder RAG CLI")
 
-    parser.add_argument(
-        "--chunk",
-        action="store_true",
-        help="Chunk text",
-    )
-    parser.add_argument(
-        "--embed",
-        action="store_true",
-        help="Generate embeddings",
-    )
-    parser.add_argument(
-        "--load",
-        action="store_true",
-        help="Load embeddings to vector db",
-    )
-    parser.add_argument(
-        "--query",
-        action="store_true",
-        help="Query vector db",
-    )
-    parser.add_argument(
-        "--chat",
-        action="store_true",
-        help="Chat with LLM",
-    )
-    parser.add_argument(
-        "--get",
-        action="store_true",
-        help="Get documents from vector db",
-    )
-    parser.add_argument(
-        "--agent",
-        action="store_true",
-        help="Chat with LLM Agent",
-    )
+    parser.add_argument("--chunk", action="store_true", help="Chunk text files")
+    parser.add_argument("--embed", action="store_true", help="Generate embeddings")
+    parser.add_argument("--load", action="store_true", help="Load embeddings to Pinecone")
+    parser.add_argument("--query", action="store_true", help="Test query against Pinecone")
+    parser.add_argument("--chat", action="store_true", help="Chat with LLM using RAG")
+    parser.add_argument("--agent", action="store_true", help="Agent-based query")
     parser.add_argument("--chunk_type", default="char-split",
-                        help="char-split | recursive-split | semantic-split")
-    
-    ###
+                        help="Chunking method: char-split | recursive-split | semantic-split")
     parser.add_argument("--symptoms", type=str, help="User symptom text")
-    parser.add_argument("--conf", type=float, help="Vision model confidence rate")
-    parser.add_argument("--class", dest="vision_class", type=str, help="Bug class, e.g., mosquito")
-
-    
-
+    parser.add_argument("--conf", type=float, help="Vision model confidence (0-1 or 0-100)")
+    parser.add_argument("--class", dest="vision_class", type=str, 
+                        help="Bug class from vision model (e.g., mosquito)")
 
     args = parser.parse_args()
-
     main(args)
