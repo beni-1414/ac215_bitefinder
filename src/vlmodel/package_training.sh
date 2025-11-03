@@ -32,4 +32,4 @@ echo ""
 echo "🎯 To use this package with Vertex AI Custom Training, reference:"
 echo "   $GCS_BUCKET_URI/vlmodel_training.tar.gz"
 
-rm -f trainer.tar.gz
+rm -f training.tar.gz
