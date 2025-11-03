@@ -29,5 +29,7 @@ workerPoolSpecs:
           value: ${WANDB_TEAM}
         - name: WANDB_PROJECT
           value: ${WANDB_PROJECT}
+        - name: GCP_PROJECT
+          value: ${GCP_PROJECT}
         - name: WANDB_API_KEY
           value: ${WANDB_API_KEY}
