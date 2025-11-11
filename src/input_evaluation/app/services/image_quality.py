@@ -201,7 +201,8 @@ def cli():
     """CLI to batch score local images and save results to CSV.
     Usage: python image_quality.py --input /path/to/images --out results.csv
 
-    NOTE: The dataset is very blurry, so around 250 images in the dataset fail the blur check. This is expected, but present day phones should do better.
+    NOTE: The dataset is very blurry, so around 250 images in the dataset fail the blur check.
+    This is expected, but present day phones should do better.
     """
     ap = argparse.ArgumentParser(description="Batch score images for heuristic metrics")
     ap.add_argument("--input", required=True, help="Folder of images (local)")
@@ -227,7 +228,7 @@ def cli():
             rows.append({"path": str(fp), "error": str(e)})
     if rows:
         _save_csv(rows, args.out)
-        # Print a summary of the results, with quantiles of each variable and total number of true-falses
+        # Print a summary of the results
         print("Quantiles of each variable:")
         for key in rows[0].keys():
             if key in (

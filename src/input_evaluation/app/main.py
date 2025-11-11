@@ -6,10 +6,11 @@ import orjson
 
 from app.config import settings
 from app.logging import setup_logging
-setup_logging()
 
 from app.routes.text_eval import router as text_router
 from app.routes.image_eval import router as image_router
+
+setup_logging()
 
 
 class ORJSONResponse(JSONResponse):
