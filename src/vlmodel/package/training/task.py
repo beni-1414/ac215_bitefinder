@@ -76,6 +76,7 @@ def main():
         verbose=verbose,
         run_id=run_id,
         save=save,
+        save_dir='models',
     )
     
     # Run training/validation loop

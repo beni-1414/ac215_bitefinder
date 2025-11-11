@@ -3,11 +3,9 @@ import argparse
 import wandb
 import os
 import torch
-from model import model_classes
+from package.training.model import model_classes
 
 def main():
-    print(f"🚀 Starting inference job...")
-
     # Define inference arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('image_fp', type=str)
@@ -56,6 +54,7 @@ def main():
         probs = torch.softmax(outputs['logits'], dim=-1)[0]
         pred = probs.argmax().item()
         print(f'Predicted: {id_to_label[pred]} ({probs[pred]:.2f})')
+        print(f'Logits: {probs.tolist()}')
 
 if __name__ == '__main__':
     main()

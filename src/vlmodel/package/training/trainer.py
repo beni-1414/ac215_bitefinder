@@ -36,7 +36,8 @@ class Trainer():
             seed=None,
             verbose=False,
             run_id='default_run',
-            save=True,
+            save=False,
+            save_dir=None,
     ):
         self.model = model
         self.model_id = model_id
@@ -46,6 +47,7 @@ class Trainer():
         self.verbose = verbose
         self.run_id = run_id
         self.save = save
+        self.save_dir = save_dir
         
         self.total_params = sum(p.numel() for p in self.model.parameters()) # Count parameters to log model complexity
         self.trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
@@ -180,11 +182,10 @@ class Trainer():
                 type='model',
                 metadata=artifact_metadata,
             )
-            save_dir = 'model'
-            self.model.model.save_pretrained(save_dir)
-            self.model.processor.save_pretrained(save_dir)
-            torch.save(self.model.classifier.state_dict(), save_dir+"/classifier.pt")
-            artifact.add_dir(save_dir)
+            self.model.model.save_pretrained(self.save_dir)
+            self.model.processor.save_pretrained(self.save_dir)
+            torch.save(self.model.classifier.state_dict(), self.save_dir+'/classifier.pt')
+            artifact.add_dir(self.save_dir)
             wandb_run.log_artifact(artifact)
         
         # Finish the W&B run
