@@ -16,13 +16,10 @@ class Settings(BaseModel):
     PORT: int = int(os.getenv("PORT", 8080))
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "info")
     ALLOW_ORIGINS: str = os.getenv("ALLOW_ORIGINS", "*")
-    MAX_UPLOAD_MB: int = int(os.getenv("MAX_UPLOAD_MB", 10))
 
     GOOGLE_CLOUD_PROJECT: str | None = os.getenv("GCP_PROJECT")
     VERTEX_REGION: str = os.getenv("GCP_REGION", "us-central1")
     VERTEX_MODEL_NAME: str = os.getenv("VERTEX_MODEL_NAME", "gemini-2.5-flash")
-
-    GCS_UPLOAD_BUCKET: str | None = os.getenv("GCS_BUCKET_URI")
 
     THRESHOLDS: Thresholds = Thresholds(
         MIN_LAPLACIAN_VAR=float(os.getenv("MIN_LAPLACIAN_VAR", 45)),
