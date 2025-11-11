@@ -17,7 +17,6 @@ workerPoolSpecs:
         - --batch_size=32
         - --text_fname=texts_v2.json
         - --lr=0.0001
-        - --device=cuda
         - --run_id=${RUN_ID}
         - --save
       env:
