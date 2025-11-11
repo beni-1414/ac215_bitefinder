@@ -47,3 +47,20 @@ def test_image_eval_handles_gcs_json(monkeypatch):
     assert data["improve_message"] == "Too blurry"
     assert data["metrics"]["blur_laplacian_var"] == 120.0  # from _dummy_metrics()
     assert captured["uri"] == "gs://bucket/bite.jpg"
+
+
+def test_image_eval_rejects_non_gs_uri():
+    """Posting a non-gs:// URI (or missing URI) should return the 422 HTTPException
+    raised in the route (image_gcs_uri must be a gs:// URI).
+    """
+    client = TestClient(app)
+    # non-gs:// scheme
+    resp = client.post(
+        "/v1/evaluate/image",
+        json={"image_gcs_uri": "http://example.com/x.jpg"},
+    )
+    assert resp.status_code == 422
+    data = resp.json()
+    # our route raises HTTPException(detail=...), so detail should be the string
+    assert data["detail"] == "image_gcs_uri must be a gs:// URI"
+
