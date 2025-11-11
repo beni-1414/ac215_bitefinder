@@ -5,6 +5,7 @@ from google.cloud import storage
 
 _client: storage.Client | None = None
 
+
 def get_client() -> storage.Client:
     global _client
     if _client is None:

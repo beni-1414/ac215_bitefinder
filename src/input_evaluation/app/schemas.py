@@ -1,6 +1,7 @@
 from __future__ import annotations
-from pydantic import BaseModel, Field, HttpUrl
-from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
 
 # Text
 class TextEvalRequest(BaseModel):
@@ -10,6 +11,7 @@ class TextEvalRequest(BaseModel):
     return_combined_text: bool = True
     debug: bool = False
 
+
 class TextEvalResponse(BaseModel):
     complete: bool
     improve_message: Optional[str] = None
@@ -17,9 +19,11 @@ class TextEvalResponse(BaseModel):
     high_danger: bool = False
     latency_ms: int
 
+
 # Image
 class ImageEvalJSONRequest(BaseModel):
     image_gcs_uri: Optional[str] = None
+
 
 class ImageMetrics(BaseModel):
     blur_laplacian_var: float
@@ -31,6 +35,7 @@ class ImageMetrics(BaseModel):
     skin_patch_detected: bool
     skin_area_ratio: float
     exif_orientation: int
+
 
 class ImageEvalResponse(BaseModel):
     usable: bool

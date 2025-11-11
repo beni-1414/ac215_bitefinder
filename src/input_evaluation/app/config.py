@@ -1,6 +1,7 @@
 import os
 from pydantic import BaseModel, Field
 
+
 class Thresholds(BaseModel):
     MIN_LAPLACIAN_VAR: float = Field(45.0)
     MIN_EXPOSURE_ENTROPY: float = Field(3.0)
@@ -32,5 +33,6 @@ class Settings(BaseModel):
         MAX_MOTION_BLUR=float(os.getenv("MAX_MOTION_BLUR", 0.60)),
         MIN_SKIN_AREA_RATIO=float(os.getenv("MIN_SKIN_AREA_RATIO", 0.15)),
     )
+
 
 settings = Settings()

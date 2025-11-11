@@ -7,6 +7,7 @@ from app.services.image_quality import compute_metrics, decide
 
 router = APIRouter(prefix="/v1/evaluate", tags=["evaluate"])
 
+
 @router.post("/image", response_model=ImageEvalResponse)
 async def evaluate_image(json_req: ImageEvalJSONRequest) -> ImageEvalResponse:
     start = time.perf_counter()

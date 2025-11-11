@@ -6,11 +6,16 @@ from google.cloud import aiplatform
 from google import genai
 from app.config import settings
 
+
 class VertexLLM:
     def __init__(self):
-        aiplatform.init(project=settings.GOOGLE_CLOUD_PROJECT, location=settings.VERTEX_REGION)
+        aiplatform.init(
+            project=settings.GOOGLE_CLOUD_PROJECT, location=settings.VERTEX_REGION
+        )
         self.client = genai.Client(
-            vertexai=True, project=settings.GOOGLE_CLOUD_PROJECT, location=settings.VERTEX_REGION
+            vertexai=True,
+            project=settings.GOOGLE_CLOUD_PROJECT,
+            location=settings.VERTEX_REGION,
         )
 
     def evaluate_text(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -25,14 +30,18 @@ class VertexLLM:
             config={
                 "temperature": 0.2,
                 "response_mime_type": "application/json",
-            }
+            },
         )
         text = resp.text or "{}"
         try:
             data = json.loads(text)
         except json.JSONDecodeError:
             # Fallback minimal structure
-            data = {"complete": False, "improve_message": "Please provide more details.", "combined_text": None}
+            data = {
+                "complete": False,
+                "improve_message": "Please provide more details.",
+                "combined_text": None,
+            }
         # Ensure keys exist
         return {
             "complete": bool(data.get("complete", False)),
@@ -40,7 +49,9 @@ class VertexLLM:
             "combined_text": data.get("combined_text"),
         }
 
+
 vertex_llm_singleton: VertexLLM | None = None
+
 
 def get_llm() -> VertexLLM:
     global vertex_llm_singleton

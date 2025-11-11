@@ -2,10 +2,10 @@ from __future__ import annotations
 import time
 from fastapi import APIRouter
 from app.schemas import TextEvalRequest, TextEvalResponse
-from app.config import settings
 from app.services.vertex_llm import get_llm
 
 router = APIRouter(prefix="/v1/evaluate", tags=["evaluate"])
+
 
 @router.post("/text", response_model=TextEvalResponse)
 async def evaluate_text(req: TextEvalRequest) -> TextEvalResponse:
@@ -32,7 +32,6 @@ async def evaluate_text(req: TextEvalRequest) -> TextEvalResponse:
         "- Keep improve_message concise and user-friendly, specifying what is missing. Example: 'To ensure proper classification, can you include where you think the bite occurred (home, park, etc.)?' Do not just answer 'Please provide more detail'\n"
         "- Ensure combined_text is well-structured and free of redundancy.\n"
         "- Do not raise high danger flag lightly; only for serious symptoms.\n"
-
     )
 
     llm = get_llm()
@@ -42,7 +41,11 @@ async def evaluate_text(req: TextEvalRequest) -> TextEvalResponse:
     return TextEvalResponse(
         complete=bool(result.get("complete", False)),
         improve_message=result.get("improve_message"),
-        combined_text=(result.get("combined_text") if not req.first_call and req.return_combined_text else None),
+        combined_text=(
+            result.get("combined_text")
+            if not req.first_call and req.return_combined_text
+            else None
+        ),
         high_danger=result.get("high_danger", False),
         latency_ms=latency_ms,
     )

@@ -31,7 +31,9 @@ def test_image_eval_handles_gcs_json(monkeypatch):
 
     monkeypatch.setattr(image_route, "read_bytes_gcs", fake_read)
     monkeypatch.setattr(image_route, "compute_metrics", lambda _: _dummy_metrics())
-    monkeypatch.setattr(image_route, "decide", lambda m: (False, "Too blurry", "blur_laplacian_var"))
+    monkeypatch.setattr(
+        image_route, "decide", lambda m: (False, "Too blurry", "blur_laplacian_var")
+    )
 
     client = TestClient(app)
     resp = client.post(
