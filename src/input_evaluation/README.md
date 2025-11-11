@@ -99,5 +99,7 @@ python -m app.services.image_quality --input path/to/images --out out.csv
 ## Tests
 Run unit tests with:
 ```bash
-python3 -m pytest
+python3 -m pytest --cov=app --cov-report=term-missing
 ```
+
+Ensure pytest and pytest-cov are installed on your environment.
