@@ -1,21 +1,24 @@
 import json
+import os
 from google import genai
 from google.genai import types
 
-# import vertexai
-# from vertexai.generative_models import FunctionDeclaration, Tool, Part
+# initialize vertex ai genai client
+GCP_PROJECT = os.environ["GCP_PROJECT"]
+GCP_LOCATION = os.environ.get("GCP_LOCATION", "us-central1")
 
-# Specify a function declaration and parameters for an API request
+client = genai.Client(vertexai=True, project=GCP_PROJECT, location=GCP_LOCATION)
+
+# define function declarations (formerly used in gemini tools)
 get_book_by_author_func = types.FunctionDeclaration(
     name="get_book_by_author",
-    description="Get the book chunks filtered by bug name",
-    # Function parameters are specified in OpenAPI JSON schema format
+    description="Retrieve database text chunks filtered by bug name.",
     parameters={
         "type": "object",
         "properties": {
             "bug": {
                 "type": "string",
-                "description": "The bug name",
+                "description": "The bug name.",
                 "enum": [
                     "ant",
                     "bed bug",
@@ -28,19 +31,17 @@ get_book_by_author_func = types.FunctionDeclaration(
             },
             "search_content": {
                 "type": "string",
-                "description": "The search text to filter content from data bases. The search term is compared against the data base text based on cosine similarity. Expand the search term to a a sentence or two to get better matches",
+                "description": "Search text used to retrieve relevant chunks from the vector database. The search term is embedded and compared against stored document embeddings using cosine similarity.",
             },
         },
         "required": ["bug", "search_content"],
     },
 )
 
-# book --> 'type' of bite, author --> bug
+
 def get_book_by_author(bug, search_content, collection, embed_func):
-
+    """query the vector db for bug + search_content"""
     query_embedding = embed_func(search_content)
-
-    # Query based on embedding value
     results = collection.query(
         query_embeddings=[query_embedding], n_results=10, where={"bug": bug}
     )
@@ -49,14 +50,13 @@ def get_book_by_author(bug, search_content, collection, embed_func):
 
 get_book_by_search_content_func = types.FunctionDeclaration(
     name="get_book_by_search_content",
-    description="Get the book chunks filtered by search terms",
-    # Function parameters are specified in OpenAPI JSON schema format
+    description="Retrieve database text chunks filtered only by search content.",
     parameters={
         "type": "object",
         "properties": {
             "search_content": {
                 "type": "string",
-                "description": "The search text to filter content from the data base. The search term is compared against the data base text based on cosine similarity. Expand the search term to a a sentence or two to get better matches",
+                "description": "Text to use for semantic search in the vector database.",
             },
         },
         "required": ["search_content"],
@@ -65,60 +65,55 @@ get_book_by_search_content_func = types.FunctionDeclaration(
 
 
 def get_book_by_search_content(search_content, collection, embed_func):
-
+    """query the vector db for search_content only"""
     query_embedding = embed_func(search_content)
-
-    # Query based on embedding value
     results = collection.query(query_embeddings=[query_embedding], n_results=10)
     return "\n".join(results["documents"][0])
 
 
-# Define all functions available to the cheese expert
+# define the available function toolset
 cheese_expert_tool = types.Tool(
-    function_declarations=[get_book_by_author_func, get_book_by_search_content_func]
+    function_declarations=[
+        get_book_by_author_func,
+        get_book_by_search_content_func,
+    ]
 )
 
 
 def execute_function_calls(function_calls, collection, embed_func):
+    """execute LLM-suggested function calls against your local tools"""
     parts = []
-    for function_call in function_calls:
-        print("Function:", function_call.name)
-        if function_call.name == "get_book_by_author":
-            print(
-                "Calling function with args:",
-                function_call.args["bug"],
-                function_call.args["search_content"],
-            )
-            response = get_book_by_author(
-                function_call.args["bug"],
-                function_call.args["search_content"],
-                collection,
-                embed_func,
-            )
+
+    for fc in function_calls:
+        print("Function:", fc.name)
+
+        if fc.name == "get_book_by_author":
+            bug = fc.args.get("bug")
+            search = fc.args.get("search_content")
+            print("Calling get_book_by_author:", bug, search)
+
+            response = get_book_by_author(bug, search, collection, embed_func)
             print("Response:", response)
-            # function_responses.append({"function_name":function_call.name, "response": response})
+
             parts.append(
                 types.Part.from_function_response(
-                    name=function_call.name,
-                    response={
-                        "content": response,
-                    },
-                ),
+                    name=fc.name,
+                    response={"content": response},
+                )
             )
-        if function_call.name == "get_book_by_search_content":
-            print("Calling function with args:", function_call.args["search_content"])
-            response = get_book_by_search_content(
-                function_call.args["search_content"], collection, embed_func
-            )
+
+        elif fc.name == "get_book_by_search_content":
+            search = fc.args.get("search_content")
+            print("Calling get_book_by_search_content:", search)
+
+            response = get_book_by_search_content(search, collection, embed_func)
             print("Response:", response)
-            # function_responses.append({"function_name":function_call.name, "response": response})
+
             parts.append(
                 types.Part.from_function_response(
-                    name=function_call.name,
-                    response={
-                        "content": response,
-                    },
-                ),
+                    name=fc.name,
+                    response={"content": response},
+                )
             )
 
     return parts
