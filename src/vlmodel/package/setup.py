@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='bitefinder-vlmodel-trainer',
+    name='bitefinder-vlmodel',
     version='0.1.0',
-    description='Vision-language model training for bug bite classification',
+    description='Vision-language model for bug bite classification',
     packages=find_packages(),
     install_requires=[
         'argparse',
