@@ -1,3 +1,5 @@
+#cli.py file for pinecone with vertex AI
+
 import os
 from dotenv import load_dotenv, find_dotenv
 
@@ -19,9 +21,9 @@ from google.genai import errors
 
 # Langchain
 from langchain_text_splitters import CharacterTextSplitter, RecursiveCharacterTextSplitter
-import agent_tools
+from ragmodel import agent_tools
 
-from pinecone_adapter import upsert_embeddings, query_by_vector
+from ragmodel.pinecone_adapter import upsert_embeddings, query_by_vector
 
 # Setup
 GCP_PROJECT = os.environ["GCP_PROJECT"]
@@ -291,7 +293,7 @@ def _normalize_conf_to_percent(conf: float) -> float:
     return max(0.0, min(100.0, pct))
 
 
-# CHANGED: Use Vertex AI for generation
+# changed to stop before LLM output
 def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: str = ""):
     print("chat()")
 
@@ -312,20 +314,19 @@ def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: 
         "What do you recommend they do to treat it?"
     )
 
-    input_prompt = f"{prompt}\n" + "\n".join(results["documents"][0])
+    context = "\n".join(results["documents"][0])
 
-    # CHANGED: Use Vertex AI client instead of gen_model
-    response = llm_client.models.generate_content(
-        model=GENERATIVE_MODEL,
-        contents=input_prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_INSTRUCTION,
-            temperature=0.7
-        )
-    )
-    generated_text = response.text
+    # instead of calling the LLM, build a payload and return it
+    payload = {
+        "question": user_question,
+        "prompt": prompt,
+        "context": context,
+        "bug_class": bug_class
+    }
 
-    print("LLM Response:", generated_text)
+    print("Prepared payload (pre-LLM):", json.dumps(payload, indent=2))
+    return payload
+
 
 
 # CHANGED: Use Vertex AI for generation
@@ -348,7 +349,8 @@ def agent(method="char-split",
     chunks = results.get("documents", [[]])[0]
     if not chunks:
         print("no chunks retrieved; try relaxing filters")
-        return
+        return None
+
     context = "\n\n".join(chunks)
 
     prompt = (
@@ -358,15 +360,16 @@ def agent(method="char-split",
         "answer using only the context above. if info is missing, say you do not have enough information."
     )
 
-    # CHANGED: Use Vertex AI client
-    resp = llm_client.models.generate_content(
-        model=GENERATIVE_MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.7
-        )
-    )
-    print("LLM Response:", resp.text)
+    # return payload instead of calling the model
+    payload = {
+        "question": question,
+        "prompt": prompt,
+        "context": context
+    }
+
+    print("Prepared payload (pre-LLM):", json.dumps(payload, indent=2))
+    return payload
+
 
 
 def main(args=None):

@@ -1,0 +1,1 @@
+# makes ragmodel a package
