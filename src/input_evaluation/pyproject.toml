@@ -31,6 +31,3 @@ test = [
 factory = false
 host = "0.0.0.0"
 port = 8080
-
-[tool.pytest.ini_options]
-asyncio_mode = "auto"

@@ -64,10 +64,9 @@ Response:
 
 This service reads env from your existing `env.dev` two folders up and secrets via a path declared in that file. Relevant vars:
 
-* Server: `PORT`, `LOG_LEVEL`, `ALLOW_ORIGINS`, `MAX_UPLOAD_MB`
-* Vertex: `GOOGLE_CLOUD_PROJECT`, `VERTEX_REGION`, `VERTEX_MODEL_NAME` (e.g. `gemini-1.5-flash`), `GOOGLE_APPLICATION_CREDENTIALS` (local only)
-* GCS: `GCS_UPLOAD_BUCKET` (optional if you accept URIs only)
-* Thresholds (tune via dataset):
+* Server: `PORT`, `LOG_LEVEL`, `ALLOW_ORIGINS`
+* Vertex: `GOOGLE_CLOUD_PROJECT`, `VERTEX_REGION`, `VERTEX_MODEL_NAME` (e.g. `gemini-2.5-flash`), `GOOGLE_APPLICATION_CREDENTIALS` (local only)
+* Thresholds (tuned via dataset):
 
   * `MIN_LAPLACIAN_VAR=60`
   * `MIN_EXPOSURE_ENTROPY=3.0`
@@ -76,19 +75,14 @@ This service reads env from your existing `env.dev` two folders up and secrets v
   * `MAX_BLOCKINESS=0.60`
   * `MAX_MOTION_BLUR=0.55`
   * `MIN_SKIN_AREA_RATIO=0.15`
-* Safety: `SAFETY_LIST_PATH` (optional file of HIGH DANGER keywords, one per line)
+
+## Things to be checked in frontend:
+- Max image size before uploading to GCP.
 
 ## Local dev
 
 ```bash
-# Build
-bash docker-shell.sh build
-# Run
-bash docker-shell.sh run
-# Call text
-bash docker-endpoint.sh text
-# Call image (multipart)
-bash docker-endpoint.sh image ./tests/fixtures/good.jpg
+bash docker-shell.sh
 ```
 
 ## Threshold tuning workflow
@@ -97,19 +91,15 @@ bash docker-endpoint.sh image ./tests/fixtures/good.jpg
 2. Run the CLI:
 
 ```bash
-python -m app.services.image_quality --input ./tests/fixtures --out metrics.csv
+python -m app.services.image_quality --input path/to/images --out out.csv
 ```
 
 3. Inspect percentiles; set env thresholds accordingly.
 
-## Deployment (Cloud Run)
+## Tests
+Run unit tests with:
+```bash
+python3 -m pytest --cov=app --cov-report=term-missing
+```
 
-See `ops/cloudrun.md`. Summary:
-
-* Build & push image to Artifact Registry.
-* Deploy with a service account that has Vertex + GCS read access.
-* Configure concurrency and memory (512Mi–1Gi). Set envs & secrets.
-
-## Non-diagnostic notice
-
-This service **does not** provide medical advice or diagnosis. It only evaluates text completeness and image capture **quality**.
+Ensure pytest and pytest-cov are installed on your environment.
