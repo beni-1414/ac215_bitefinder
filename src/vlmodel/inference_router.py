@@ -1,17 +1,15 @@
+from typing import Optional
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from PIL import Image
 from io import BytesIO
 import base64
 import wandb
 import os
 import torch
+from google.cloud import storage
 from package.training.model import model_classes
-
-class InferenceRequest(BaseModel):
-    text: str
-    image_base64: str
 
 router = APIRouter()
 
@@ -20,7 +18,7 @@ model = None
 id_to_label = None
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-@router.on_event("startup")
+@router.on_event('startup')
 def load_model():
     global model, id_to_label, device
     
@@ -35,9 +33,9 @@ def load_model():
 
     # Pull artifact metadata
     metadata = dict(artifact.metadata)
-    model_id = metadata["model_id"]
-    num_labels = metadata["num_labels"]
-    id_to_label = {int(k): v for k, v in metadata["id_to_label"].items()}
+    model_id = metadata['model_id']
+    num_labels = metadata['num_labels']
+    id_to_label = {int(k): v for k, v in metadata['id_to_label'].items()}
 
     # Instansiate model from saved artifact
     model_class = model_classes[model_id]
@@ -47,15 +45,64 @@ def load_model():
     model.classifier.load_state_dict(torch.load(f'{artifact_dir}/classifier.pt', map_location=torch.device(device)))
     model.eval()
 
-@router.post("/predict")
+'''
+InferenceRequest: model for inference request payload (text + image)
+'''
+class InferenceRequest(BaseModel):
+    # Text input
+    text_raw: Optional[str] = None # Raw text as string
+    text_gcs: Optional[str] = None # Path in bucket of text file (e.g., 'user_input/input.txt')
+    # Image input
+    image_base64: Optional[str] = None # Raw image as base64-encoded string
+    image_gcs: Optional[str] = None # Path in bucket of image file (e.g., 'user_input/input.jpg')
+
+    # Ensure exactly one source per input modality
+    @model_validator(mode='after')
+    def check_input(self): 
+        if (self.text_raw is None) == (self.text_gcs is None): # Check if both text inputs are empty or given
+            raise ValueError('you must provide only one text input: text_raw OR text_gcs.')
+        if (self.image_base64 is None) == (self.image_gcs is None): # Check if both image inputs are empty or given
+            raise ValueError('you must provide only one image input: image_base64 OR image_gcs.')
+        return self
+
+
+@router.post('/predict')
 def predict(request: InferenceRequest):
     global model, id_to_label, device
+    image, text = None, None
 
-    text = request.text
-    image_bytes = base64.b64decode(request.image_base64)
-    image = Image.open(BytesIO(image_bytes)).convert('RGB')
+    # Load text input
+    if request.text_raw:
+        # Raw text
+        text = request.text_raw
+    else:
+        # Load text from GCS bucket
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(os.getenv('GCP_BUCKET_NAME'))
+        text_blob = bucket.blob(request.text_gcs)
+        if not text_blob.exists():
+            raise HTTPException(status_code=404, detail=f'Input error: {request.text_gcs} not found in bucket!')
+        text = text_blob.download_as_text()
 
+    # Load image input
+    if request.image_base64:
+        # Decode base64 image
+        image_bytes = base64.b64decode(request.image_base64)
+        image = Image.open(BytesIO(image_bytes)).convert('RGB')
+    else:
+        # Load image from GCS bucket
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(os.getenv('GCP_BUCKET_NAME'))
+        image_blob = bucket.blob(request.image_gcs)
+        if not image_blob.exists():
+            raise HTTPException(status_code=404, detail=f'Input error: {request.image_gcs} not found in bucket!')
+        image_bytes = image_blob.download_as_bytes()
+        image = Image.open(BytesIO(image_bytes)).convert('RGB')
+
+    # Process inputs
     processed = model.processor(text=[text], images=[image], return_tensors='pt', padding=True).to(device)
+    
+    # Run inference and get predicted label and probabilities
     with torch.no_grad():
         outputs = model(**processed)
         probs = torch.softmax(outputs['logits'], dim=-1)[0]
@@ -63,8 +110,9 @@ def predict(request: InferenceRequest):
         pred_label = id_to_label[pred]
         pred_conf = probs[pred].item()
 
+        # Return prediction as JSON response
         return JSONResponse({
-            "prediction": pred_label,
-            "confidence": round(pred_conf, 4),
-            "probabilities": {id_to_label[i]: float(p) for i, p in enumerate(probs)}
+            'prediction': pred_label,
+            'confidence': round(pred_conf, 4),
+            'probabilities': {id_to_label[i]: float(p) for i, p in enumerate(probs)}
         })

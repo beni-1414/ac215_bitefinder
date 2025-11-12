@@ -12,6 +12,8 @@ docker build -t $IMAGE_NAME -f Dockerfile .
 docker run --rm --name $IMAGE_NAME -ti \
     -p 8080:8080 \
     -v "$(pwd)":/app \
+    -v "$(pwd)"/$SECRETS_DIR:/secrets \
+    -e GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS \
     -e GCP_BUCKET_NAME=$GCP_BUCKET_NAME \
     -e WANDB_API_KEY=$WANDB_API_KEY \
     -e WANDB_PROJECT=$WANDB_PROJECT \
