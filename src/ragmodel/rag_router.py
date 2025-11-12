@@ -4,7 +4,7 @@ from pydantic import BaseModel
 import time
 from dotenv import load_dotenv, find_dotenv
 
-# import your modified chat() and agent() functions
+# import modified chat() and agent() functions
 from ragmodel.rag_pipeline import chat, agent
 
 load_dotenv(find_dotenv())
