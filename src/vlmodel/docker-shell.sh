@@ -18,4 +18,3 @@ docker run --rm --name $IMAGE_NAME -ti \
     -e GCS_BUCKET_URI=$GCS_BUCKET_URI \
     -e WANDB_API_KEY=$WANDB_API_KEY \
     $IMAGE_NAME
-    # -v "$(pwd)"/$DATA_DIR:/app/data \

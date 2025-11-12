@@ -4,7 +4,6 @@ from PIL import Image
 import os
 import torch
 import json
-from trainer.utils_gcp import *
 
 '''
 Assumes the following directory structure:
@@ -67,11 +66,9 @@ class BugBitePairedDataset(Dataset):
         self.label_to_id = {label: i for i, label in enumerate(sorted(labels))}
         self.id_to_label = {i: label for i, label in enumerate(sorted(labels))}
         self.num_labels = len(self.label_to_id)
-
-        # Save synthetic labels info
-        self.synthetic_labels = text_fname
         
         # Load texts JSON file
+        self.text_fname = text_fname
         with open(text_dir+text_fname, 'r') as text_file:
             text_data = json.load(text_file)
         

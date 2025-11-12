@@ -1,27 +1,34 @@
 workerPoolSpecs:
   - machineSpec:
-      machineType: e2-standard-4
+      # machineType: e2-standard-4
+      machine_type: n1-standard-4
+      accelerator_type: NVIDIA_TESLA_T4
+      accelerator_count: 1
     replicaCount: 1
     pythonPackageSpec:
-      executorImageUri: us-docker.pkg.dev/vertex-ai/training/pytorch-xla.2-4.py310:latest
+      # executorImageUri: us-docker.pkg.dev/vertex-ai/training/pytorch-xla.2-4.py310:latest
+      executorImageUri: us-docker.pkg.dev/vertex-ai/training/pytorch-gpu.2-4.py310:latest
       packageUris:
-        - gs://bitefinder-data/vlmodel_trainer.tar.gz
-      pythonModule: trainer.task
+        - gs://bitefinder-data/vlmodel_training.tar.gz
+      pythonModule: training.task
       args:
         - --model=clip
-        - --epochs=10
+        - --epochs=20
         - --batch_size=32
-        - --labels=texts_v2.json
+        - --text_fname=texts_v2.json
         - --lr=0.0001
-        - --gcp
-        - --verbose
         - --run_id=${RUN_ID}
+        - --save
       env:
-        - name: GCP_PROJECT
-          value: ${GCP_PROJECT}
         - name: GCS_BUCKET_URI
           value: ${GCS_BUCKET_URI}
         - name: RUN_ID
           value: ${RUN_ID}
+        - name: WANDB_TEAM
+          value: ${WANDB_TEAM}
+        - name: WANDB_PROJECT
+          value: ${WANDB_PROJECT}
+        - name: GCP_PROJECT
+          value: ${GCP_PROJECT}
         - name: WANDB_API_KEY
           value: ${WANDB_API_KEY}

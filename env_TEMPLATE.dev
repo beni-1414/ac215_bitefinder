@@ -2,9 +2,11 @@
 
 # Define some environment variables
 export SECRETS_DIR=../../../secrets/
-export DATA_DIR=../../data/
-export GCP_PROJECT="bitefinder-irith"
+export GCP_PROJECT="bitefinder-irith" #Irith's project
 export GCP_BUCKET_NAME="bitefinder-data"
 export GCS_BUCKET_URI="gs://bitefinder-data"
+export GCP_REGION="us-central1"
 export GOOGLE_APPLICATION_CREDENTIALS="${SECRETS_DIR}bitefinder-service-account.json"
-export GCP_PATH_SYNTHETIC_LABELS="data/text/training/"
+export WANDB_TEAM="bitefinder"
+export WANDB_PROJECT="bitefinder-vl"
+export SERVICE_ACCOUNT_EMAIL="xxx@xxx.iam.gserviceaccount.com"
