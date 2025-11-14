@@ -13,7 +13,6 @@ import time
 import glob
 import hashlib
 
-# Vertex AI (replaces google.generativeai)
 from google import genai
 from google.genai import types
 from google.genai.types import Content, Part
