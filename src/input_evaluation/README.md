@@ -91,7 +91,7 @@ bash docker-shell.sh
 2. Run the CLI:
 
 ```bash
-python -m app.services.image_quality --input path/to/images --out out.csv
+python -m api.services.image_quality --input path/to/images --out out.csv
 ```
 
 3. Inspect percentiles; set env thresholds accordingly.
@@ -99,7 +99,7 @@ python -m app.services.image_quality --input path/to/images --out out.csv
 ## Tests
 Run unit tests with:
 ```bash
-python3 -m pytest --cov=app --cov-report=term-missing
+python3 -m pytest --cov=api --cov-report=term-missing
 ```
 
 Ensure pytest and pytest-cov are installed on your environment.
