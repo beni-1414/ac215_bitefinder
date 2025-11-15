@@ -64,7 +64,7 @@ Response:
 
 This service reads env from your existing `env.dev` two folders up and secrets via a path declared in that file. Relevant vars:
 
-* Server: `PORT`, `LOG_LEVEL`, `ALLOW_ORIGINS`
+* Server: `ALLOW_ORIGINS`
 * Vertex: `GOOGLE_CLOUD_PROJECT`, `VERTEX_REGION`, `VERTEX_MODEL_NAME` (e.g. `gemini-2.5-flash`), `GOOGLE_APPLICATION_CREDENTIALS` (local only)
 * Thresholds (tuned via dataset):
 

@@ -13,11 +13,13 @@ class Thresholds(BaseModel):
 
 
 class Settings(BaseModel):
-    PORT: int = int(os.getenv("PORT", 8080))
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "info")
     ALLOW_ORIGINS: str = os.getenv("ALLOW_ORIGINS", "*")
 
-    GOOGLE_CLOUD_PROJECT: str | None = os.getenv("GCP_PROJECT")
+    GOOGLE_CLOUD_PROJECT: str | None = (
+        os.getenv("GCP_PROJECT")  # your local choice
+        or os.getenv("GOOGLE_CLOUD_PROJECT")  # set by Cloud Run / Cloud Functions
+        or os.getenv("GCLOUD_PROJECT")  # used in some contexts
+    )
     VERTEX_REGION: str = os.getenv("GCP_REGION", "us-central1")
     VERTEX_MODEL_NAME: str = os.getenv("VERTEX_MODEL_NAME", "gemini-2.5-flash")
 
