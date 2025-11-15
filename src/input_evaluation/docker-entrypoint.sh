@@ -4,27 +4,23 @@ set -e
 echo "Container is starting..."
 echo "Architecture: $(uname -m)"
 
-# Activate virtual environment (guarded)
-VENV_PATH=/home/app/.venv
-if [ -f "$VENV_PATH/bin/activate" ]; then
-    echo "Activating virtual environment at $VENV_PATH"
-    # shellcheck disable=SC1090
-    source "$VENV_PATH/bin/activate"
-else
-    echo "WARNING: virtualenv not found at $VENV_PATH. Continuing without activating venv." >&2
-fi
-
-echo "Environment ready." 
+echo "Environment ready."
 echo "Python version: $(python --version 2>/dev/null || echo 'python not found')"
 echo "UV version: $(uv --version 2>/dev/null || echo 'uv not found')"
 
-# Run the app.main:app FastAPI application (project package is 'app')
+# If arguments are passed, execute them instead of starting the server
+if [ $# -gt 0 ]; then
+  echo "Executing command: $@"
+  exec "$@"
+fi
+
+# Run the api.main:app FastAPI application (project package is 'app')
 uvicorn_server() {
-    uvicorn app.main:app --host 0.0.0.0 --port 9000 --log-level debug --reload --reload-dir app/ "$@"
+    uvicorn api.main:api --host 0.0.0.0 --port 9000 --log-level debug --reload --reload-dir api/
 }
 
 uvicorn_server_production() {
-    uv run uvicorn app.main:app --host 0.0.0.0 --port 9000 --lifespan on
+    uvicorn api.main:api --host 0.0.0.0 --port 9000 --lifespan on
 }
 
 export -f uvicorn_server
