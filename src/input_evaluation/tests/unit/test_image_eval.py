@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from app.main import app
-import app.routes.image_eval as image_route
-from app.services.image_quality import IQAMetrics
+from api.main import api
+import api.routes.image_eval as image_route
+from api.services.image_quality import IQAMetrics
 
 
 def _dummy_metrics():
@@ -31,11 +31,9 @@ def test_image_eval_handles_gcs_json(monkeypatch):
 
     monkeypatch.setattr(image_route, "read_bytes_gcs", fake_read)
     monkeypatch.setattr(image_route, "compute_metrics", lambda _: _dummy_metrics())
-    monkeypatch.setattr(
-        image_route, "decide", lambda m: (False, "Too blurry", "blur_laplacian_var")
-    )
+    monkeypatch.setattr(image_route, "decide", lambda m: (False, "Too blurry", "blur_laplacian_var"))
 
-    client = TestClient(app)
+    client = TestClient(api)
     resp = client.post(
         "/v1/evaluate/image",
         json={"image_gcs_uri": "gs://bucket/bite.jpg"},
@@ -53,7 +51,7 @@ def test_image_eval_rejects_non_gs_uri():
     """Posting a non-gs:// URI (or missing URI) should return the 422 HTTPException
     raised in the route (image_gcs_uri must be a gs:// URI).
     """
-    client = TestClient(app)
+    client = TestClient(api)
     # non-gs:// scheme
     resp = client.post(
         "/v1/evaluate/image",
@@ -63,4 +61,3 @@ def test_image_eval_rejects_non_gs_uri():
     data = resp.json()
     # our route raises HTTPException(detail=...), so detail should be the string
     assert data["detail"] == "image_gcs_uri must be a gs:// URI"
-

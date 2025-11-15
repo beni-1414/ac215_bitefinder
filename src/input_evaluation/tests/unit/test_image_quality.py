@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from app.config import settings
-from app.services import image_quality
-from app.services.image_quality import IQAMetrics, compute_metrics
+from api.config import settings
+from api.services import image_quality
+from api.services.image_quality import IQAMetrics, compute_metrics
 from PIL import Image
 from io import BytesIO
 
@@ -40,6 +40,7 @@ def test_decide_accepts_clean_image():
     assert msg == "OK"
     assert culprit == ""
 
+
 def test_compute_metrics_and_decide_exposure():
     # Create a small synthetic RGB image (skin-tone color) and compute metrics
     im = Image.new("RGB", (64, 64), color=(210, 180, 140))
@@ -57,7 +58,5 @@ def test_compute_metrics_and_decide_exposure():
     # Force an exposure-related failure and verify decide reports the exposure culprit
     metrics.exposure_hist_entropy = settings.THRESHOLDS.MIN_EXPOSURE_ENTROPY - 0.5
     metrics.under_over_exposed_ratio = settings.THRESHOLDS.MAX_EXPOSURE_CLIP_RATIO + 0.1
-    usable, msg, culprit = __import__("app.services.image_quality", fromlist=["decide"]).decide(
-        metrics
-    )
+    usable, msg, culprit = __import__("api.services.image_quality", fromlist=["decide"]).decide(metrics)
     assert usable is False

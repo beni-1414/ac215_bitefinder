@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from app.main import app
-import app.routes.text_eval as text_route
+from api.main import api
+import api.routes.text_eval as text_route
 
 
 class DummyLLM:
@@ -32,7 +32,7 @@ def test_text_eval_combines_history(monkeypatch):
         },
     )
 
-    client = TestClient(app)
+    client = TestClient(api)
     payload = {
         "user_text": "latest description",
         "history": ["first chunk", "second chunk"],
@@ -60,7 +60,7 @@ def test_text_eval_first_call_suppresses_combined_text(monkeypatch):
         },
     )
 
-    client = TestClient(app)
+    client = TestClient(api)
     payload = {
         "user_text": "single description",
         "history": [],
