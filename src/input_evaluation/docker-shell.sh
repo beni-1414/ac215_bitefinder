@@ -12,7 +12,7 @@ docker build -t $IMAGE_NAME -f Dockerfile .
 
 # Run the container
 docker run --rm --name $IMAGE_NAME -ti \
-  -v "$(pwd)":/app \
+  -v "$(pwd)"/api:/app/api \
   -v "$(pwd)"/$SECRETS_DIR:/secrets \
   -p 9000:9000 \
   -e GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS \
