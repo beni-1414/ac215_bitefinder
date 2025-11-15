@@ -1,9 +1,9 @@
 from __future__ import annotations
 import time
 from fastapi import APIRouter, HTTPException
-from app.schemas import ImageEvalJSONRequest, ImageEvalResponse, ImageMetrics
-from app.services.gcs_io import read_bytes_gcs
-from app.services.image_quality import compute_metrics, decide
+from api.schemas import ImageEvalJSONRequest, ImageEvalResponse, ImageMetrics
+from api.services.gcs_io import read_bytes_gcs
+from api.services.image_quality import compute_metrics, decide
 
 router = APIRouter(prefix="/v1/evaluate", tags=["evaluate"])
 

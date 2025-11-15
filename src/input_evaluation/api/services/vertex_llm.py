@@ -4,14 +4,12 @@ from typing import Any, Dict
 
 from google.cloud import aiplatform
 from google import genai
-from app.config import settings
+from api.config import settings
 
 
 class VertexLLM:
     def __init__(self):
-        aiplatform.init(
-            project=settings.GOOGLE_CLOUD_PROJECT, location=settings.VERTEX_REGION
-        )
+        aiplatform.init(project=settings.GOOGLE_CLOUD_PROJECT, location=settings.VERTEX_REGION)
         self.client = genai.Client(
             vertexai=True,
             project=settings.GOOGLE_CLOUD_PROJECT,

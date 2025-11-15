@@ -2,8 +2,8 @@ from __future__ import annotations
 import time
 from pathlib import Path
 from fastapi import APIRouter
-from app.schemas import TextEvalRequest, TextEvalResponse
-from app.services.vertex_llm import get_llm
+from api.schemas import TextEvalRequest, TextEvalResponse
+from api.services.vertex_llm import get_llm
 
 router = APIRouter(prefix="/v1/evaluate", tags=["evaluate"])
 
@@ -28,11 +28,7 @@ async def evaluate_text(req: TextEvalRequest) -> TextEvalResponse:
     return TextEvalResponse(
         complete=bool(result.get("complete", False)),
         improve_message=result.get("improve_message"),
-        combined_text=(
-            result.get("combined_text")
-            if not req.first_call and req.return_combined_text
-            else None
-        ),
+        combined_text=(result.get("combined_text") if not req.first_call and req.return_combined_text else None),
         high_danger=result.get("high_danger", False),
         latency_ms=latency_ms,
     )

@@ -9,7 +9,7 @@ import numpy as np
 import cv2
 from PIL import Image, ExifTags
 
-from app.config import settings
+from api.config import settings
 
 
 @dataclass
@@ -166,10 +166,7 @@ def decide(metrics: IQAMetrics) -> Tuple[bool, str, str]:
             "Compression artifacts detected. Use original photo quality and avoid screenshots.",
             "compression_artifacts_score",
         )
-    if (
-        not metrics.skin_patch_detected
-        or metrics.skin_area_ratio < t.MIN_SKIN_AREA_RATIO
-    ):
+    if not metrics.skin_patch_detected or metrics.skin_area_ratio < t.MIN_SKIN_AREA_RATIO:
         return (
             False,
             "Ensure the bite area fills about one-third of the frame with plain background.",
@@ -239,9 +236,7 @@ def cli():
                 "exif_orientation",
             ):
                 continue
-            vals = [
-                r[key] for r in rows if key in r and isinstance(r[key], (int, float))
-            ]
+            vals = [r[key] for r in rows if key in r and isinstance(r[key], (int, float))]
             if not vals:
                 continue
             q25 = np.percentile(vals, 25)

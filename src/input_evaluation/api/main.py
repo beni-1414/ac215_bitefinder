@@ -4,11 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import orjson
 
-from app.config import settings
-from app.logging import setup_logging
+from api.config import settings
+from api.logging import setup_logging
 
-from app.routes.text_eval import router as text_router
-from app.routes.image_eval import router as image_router
+from api.routes.text_eval import router as text_router
+from api.routes.image_eval import router as image_router
 
 setup_logging()
 
@@ -20,9 +20,9 @@ class ORJSONResponse(JSONResponse):
         return orjson.dumps(content)
 
 
-app = FastAPI(title="Eval Microservice", default_response_class=ORJSONResponse)
+api = FastAPI(title="Eval Microservice", default_response_class=ORJSONResponse)
 
-app.add_middleware(
+api.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in settings.ALLOW_ORIGINS.split(",")],
     allow_credentials=True,
@@ -31,10 +31,10 @@ app.add_middleware(
 )
 
 
-@app.get("/_healthz")
+@api.get("/_healthz")
 async def healthz():
     return {"ok": True}
 
 
-app.include_router(text_router)
-app.include_router(image_router)
+api.include_router(text_router)
+api.include_router(image_router)
