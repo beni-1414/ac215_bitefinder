@@ -22,7 +22,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image
+      - name: Build Docker image for Input Evaluation
         working-directory: src/input_evaluation
         run: |
           docker build -t bitefinder-input-evaluation:${{ github.sha }} .
@@ -36,6 +36,22 @@ jobs:
         with:
           name: docker-image
           path: /tmp/bitefinder-input-evaluation.tar
+          retention-days: 1
+
+      - name: Build Docker image for Orchestrator
+        working-directory: src/orchestrator
+        run: |
+          docker build -t bitefinder-orchestrator:${{ github.sha }} .
+
+      - name: Save Docker image
+        run: |
+          docker save bitefinder-orchestrator:${{ github.sha }} -o /tmp/bitefinder-orchestrator.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-orchestrator
+          path: /tmp/bitefinder-orchestrator.tar
           retention-days: 1
 
   # Job 2: Run linting and formatting checks
