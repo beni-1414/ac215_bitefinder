@@ -1,0 +1,98 @@
+from __future__ import annotations
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
+
+# Text
+class TextEvalRequest(BaseModel):
+    user_text: str
+    first_call: bool = True
+    history: List[str] = Field(default_factory=list)
+    return_combined_text: bool = True
+    debug: bool = False
+
+
+class TextEvalResponse(BaseModel):
+    complete: bool
+    improve_message: Optional[str] = None
+    combined_text: Optional[str] = None
+    high_danger: bool = False
+    latency_ms: int
+
+
+# Image
+class ImageEvalJSONRequest(BaseModel):
+    image_gcs_uri: Optional[str] = None
+
+
+class ImageMetrics(BaseModel):
+    blur_laplacian_var: float
+    exposure_hist_entropy: float
+    under_over_exposed_ratio: float
+    noise_estimate_sigma: float
+    compression_artifacts_score: float
+    motion_blur_index: float
+    skin_patch_detected: bool
+    skin_area_ratio: float
+    exif_orientation: int
+
+
+class ImageEvalResponse(BaseModel):
+    usable: bool
+    improve_message: str
+    metrics: ImageMetrics
+    latency_ms: int
+    source: str
+
+
+# VL model (vision+language) request/response
+class VLPredictRequest(BaseModel):
+    text_raw: Optional[str] = None
+    image_gcs: Optional[str] = None
+
+
+class VLPredictResponse(BaseModel):
+    prediction: str
+    confidence: float
+    probabilities: Optional[dict] = None
+
+
+# RAG / orchestrator interactions
+class RAGRequest(BaseModel):
+    question: str
+    symptoms: Optional[str] = None
+    conf: Optional[float] = None
+    bug_class: Optional[str] = None
+
+
+class RAGResponse(BaseModel):
+    question: Optional[str] = None
+    prompt: Optional[str] = None
+    context: Optional[str] = None
+    bug_class: Optional[str] = None
+
+
+# Orchestrator evaluate request
+class OrchestratorEvaluateRequest(BaseModel):
+    image_gcs_uri: Optional[str] = None
+    user_text: Optional[str] = None
+    overwrite_validation: bool = False
+    first_call: bool = True
+    history: List[str] = Field(default_factory=list)
+    return_combined_text: bool = True
+    debug: bool = False
+
+
+class OrchestratorEvaluateResponse(BaseModel):
+    ok: bool
+    # Prediction returned when a VL model runs
+    prediction: Optional[str] = None
+    confidence: Optional[float] = None
+    message: Optional[str] = None
+    # Raw results from the input evaluators (image/text), may include 'error' or evaluator outputs
+    results: Optional[dict] = None
+    # If validation failed and overwrite_validation was false, these fields explain issues
+    image_issue: Optional[str] = None
+    text_issue: Optional[str] = None
+    # Generic error detail (downstream service failure)
+    error: Optional[str] = None
