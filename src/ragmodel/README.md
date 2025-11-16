@@ -15,7 +15,8 @@ This service implements a modular retrieval-augmented generation (RAG) pipeline 
 | `api/services/agent_tools.py`       | Provides Gemini / Vertex AI tool-calling utilities and helper methods for structured responses.                                                            |
 | `api/services/pinecone_adapter.py`  | Manages upserting, querying, and retrieval of embeddings in the Pinecone vector database.                                                                  |
 | `api/services/semantic_splitter.py` | Performs text chunking and semantic splitting when building or updating the embedding database.                                                            |
-| `api/scripts/create_index.py`       | One-time utility script for creating and initializing the Pinecone index. Intended for manual setup, not runtime execution.                                |
+| `api/scripts/build_vector_store.py`       | Processes text → chunks → embeddings → upsert into Pinecone. Run whenever updating the bug-bite dataset or rebuilding embeddings.                     |
+| `api/scripts/create_index.py`       | Creates the Pinecone index itself (name, dimensions, metadata config).                                |
 | `api/main.py`       | FastAPI application entrypoint - starts the RAG Preprocessor API server, loads routes, and exposes HTTP endpoint `/rag/chat` |
 | `api/__init__.py`               | Marks the `api` directory as a Python package and exposes submodules for routes, services, and scripts.                                                    |
 | `Dockerfile`                    | Defines the build instructions for containerizing the RAG application.                                                                                     |
@@ -62,6 +63,7 @@ To use the RAG Preprocessor, you must first build and populate the Pinecone vect
 python api/scripts/build_vector_store.py
 ```
 This pipeline:
+- creates (or recreates) the Pinecone index using `create_index.py`
 - splits bug-bite text files into chunks
 - generates embeddings with Vertex AI
 - upserts them into Pinecone
