@@ -14,9 +14,12 @@ Currently, our project contains 4 containerized workflows that achieve 4 differe
 - OpenAI API key on your GCP account secrets manager called `OPENAI_API_KEY`, accessible to the service account you are using (only for `synthetic_label_generation`)
 - A service account with access to the GCP bucket ``bitefinder_data``.
 
-### Usage
+## Data versioning
+Since our data does not change ofter, we are not using a data versioning tool like DVC. Instead, we are storing all our data in a GCP bucket, and saving snapshots of the data whenever it changes with the pattern `data_v{version_number}`. That way, when we train a model we can specify exactly which version of the data we used and it is reproducible.
+
+## Usage
 To set up and run the containers, follow these steps:
-#### Local
+### Local
 Running it from Windows (Git Bash) gives issues with mounting volumes. Use WSL or a Linux/Mac system. Also, ensure you have a secrets folder outside of the repo with a file called `bitefinder-service-account.json` containing the service account key.
 ```bash
 sh src/{container_name}/docker-shell.sh
@@ -67,7 +70,7 @@ Once inside the container, to train a model:
 python train.py
 ```
 
-Once inside the container, to run inference: 
+Once inside the container, to run inference:
 ```bash
 python infer.py <image_fp> <text>
 ```
