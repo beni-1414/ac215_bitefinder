@@ -15,8 +15,8 @@ This service implements a modular retrieval-augmented generation (RAG) pipeline 
 | `api/services/agent_tools.py`       | Provides Gemini / Vertex AI tool-calling utilities and helper methods for structured responses.                                                            |
 | `api/services/pinecone_adapter.py`  | Manages upserting, querying, and retrieval of embeddings in the Pinecone vector database.                                                                  |
 | `api/services/semantic_splitter.py` | Performs text chunking and semantic splitting when building or updating the embedding database.                                                            |
-| `api/scripts/build_vector_store.py`       | Processes text → chunks → embeddings → upsert into Pinecone. Run whenever updating the bug-bite dataset or rebuilding embeddings.                     |
-| `api/scripts/create_index.py`       | Creates the Pinecone index itself (name, dimensions, metadata config).                                |
+| `api/scripts/build_vector_store.py` | Full vector-store builder. Recreates the Pinecone index (via `create_index.py`), then chunks text, generates embeddings, and upserts everything into Pinecone. Run this whenever you update the bug-bite dataset or want to completely rebuild embeddings. |
+| `api/scripts/create_index.py`       | One-time utility that creates (or recreates) the Pinecone index: sets name, dimensions, and serverless config. Called automatically by `build_vector_store.py`, but can also be run manually if needed. |
 | `api/main.py`       | FastAPI application entrypoint - starts the RAG Preprocessor API server, loads routes, and exposes HTTP endpoint `/rag/chat` |
 | `api/__init__.py`               | Marks the `api` directory as a Python package and exposes submodules for routes, services, and scripts.                                                    |
 | `Dockerfile`                    | Defines the build instructions for containerizing the RAG application.                                                                                     |
