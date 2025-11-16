@@ -18,6 +18,5 @@ docker run --rm --name $IMAGE_NAME -ti \
   -e GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS \
   -e DEV=1 \
   -e GCP_PROJECT=$GCP_PROJECT \
-  -e GCS_BUCKET_URI=$GCS_BUCKET_URI \
   --network bitefinder-network \
   $IMAGE_NAME
