@@ -1,8 +1,6 @@
 # RAG Model Service
 
-This service implements a modular **retrieval-augmented generation (RAG)** pipeline for the BiteFinder project.  
-It preprocesses user input (symptoms, confidence score, bug class), generates embeddings, retrieves context from Pinecone, and builds a structured prompt.  
-Instead of directly calling a language model, it **stores the prepared payload in a shared container**, allowing a separate orchestrator API to handle the actual LLM response generation.
+This service implements a modular retrieval-augmented generation (RAG) pipeline for the BiteFinder project. It preprocesses user input (symptoms, confidence score, bug class), generates embeddings, retrieves context from Pinecone, and builds a structured prompt. Instead of directly calling a language model, it **returns a prepared payload** so that a separate orchestrator service can perform the actual LLM call.
 
 ---
 
@@ -75,9 +73,48 @@ Run from inside the `ragmodel/` directory:
 uvicorn api.main:api --reload --port 8080
 ```
 
-## Example Test: 
+## Example cURL Request: 
 ```
 curl -X POST http://127.0.0.1:8080/rag/chat \
      -H "Content-Type: application/json" \
      -d '{"symptoms": "itchy red bumps on my arm", "conf": 0.9, "bug_class": "mosquito"}'
+```
+
+## Testing
+Tests live in: `ragmodel/tests/`. All tests must be run from inside the `ragmodel/` directory, since that is where the `api/` package root begins.
+
+### Unit Tests
+Unit tests verify core RAG preprocessing logic without calling external services (Vertex AI or Pinecone). Mocks simulate embeddings and vector search responses so the tests run fast and offline.
+#### 1. `test_rag_pipeline.py`
+**Validates the core RAG preprocessing logic implemented in chat().**
+
+This tests ensures:
+- embeddings are mocked correctly
+- Pinecone retrieval is mocked
+- the assembled payload includes
+    - question
+    - prompt
+    - context
+    - bug_class
+- the context and prompt correctly incorporate both symptoms and retrieved chunks
+
+**Run it with:**
+```
+python -m tests.unit.test_rag_pipeline
+```
+
+#### 2. `test_rag_router.py`
+**Validates the /rag/chat API route using FastAPI’s TestClient.**
+
+This test ensures:
+- the route accepts a valid JSON request body
+- the router calls the underlying chat() pipeline function (mocked)
+- the response includes the correct structure:
+    - "status": "ok"
+    - "payload": {...}
+    - "latency_ms" as an integer
+
+**Run it with:**
+```
+python -m tests.unit.test_rag_router
 ```
