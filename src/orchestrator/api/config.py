@@ -15,9 +15,9 @@ class Settings(BaseModel):
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "info")
     ALLOW_ORIGINS: str = os.getenv("ALLOW_ORIGINS", "*")
     # Downstream service URLs (can be overridden via env)
-    INPUT_EVAL_URL: str = os.getenv("INPUT_EVAL_URL", "http://input-evaluation:9000")
-    VL_MODEL_URL: str = os.getenv("VL_MODEL_URL", "http://vl-model:9000")
-    RAG_MODEL_URL: str = os.getenv("RAG_MODEL_URL", "http://rag-model:9000")
+    INPUT_EVAL_URL: str = os.getenv("INPUT_EVAL_URL", "http://input_evaluation:9000")
+    VL_MODEL_URL: str = os.getenv("VL_MODEL_URL", "http://vlmodel:9000")
+    RAG_MODEL_URL: str = os.getenv("RAG_MODEL_URL", "http://ragmodel:9000")
 
 
 settings = Settings()
