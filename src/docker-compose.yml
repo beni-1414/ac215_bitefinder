@@ -1,0 +1,51 @@
+services:
+  orchestrator:
+    image: src-orchestrator:latest
+    build: ./orchestrator
+    container_name: orchestrator
+    ports:
+      - "8002:9000"                # host:container, app listens on 9000
+    depends_on:
+      - ragmodel
+      - vlmodel
+      - input_evaluation
+    environment:
+      RAGMODEL_URL: "http://ragmodel:9000"
+      VLMODEL_URL: "http://vlmodel:9000"
+      INPUT_EVALUATION_URL: "http://input_evaluation:9000"
+      GOOGLE_APPLICATION_CREDENTIALS: "/secrets/bitefinder-service-account.json"
+    volumes:
+      - ../../secrets:/secrets:ro      # same as -v "$(pwd)"/$SECRETS_DIR:/secrets (read-only)
+
+  ragmodel:
+    image: src-ragmodel:latest
+    build: ./ragmodel
+    container_name: ragmodel
+    ports:
+      - "8003:9000"
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: "/secrets/bitefinder-service-account.json"
+    volumes:
+      - ../../secrets:/secrets:ro
+
+  input_evaluation:
+    image: src-input_evaluation:latest
+    build: ./input_evaluation
+    container_name: input_evaluation
+    ports:
+      - "8001:9000"
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: "/secrets/bitefinder-service-account.json"
+    volumes:
+      - ../../secrets:/secrets:ro
+
+  vlmodel:
+    image: src-vlmodel:latest
+    build: ./vlmodel
+    container_name: vlmodel
+    ports:
+      - "8004:9000"
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: "/secrets/bitefinder-service-account.json"
+    volumes:
+      - ../../secrets:/secrets:ro
