@@ -12,8 +12,8 @@ on:
 
 jobs:
   # Job 1: Build Docker images
-  build:
-    name: Build Docker Image
+  build-input-evaluation:
+    name: Build Input Evaluation Docker Image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -38,6 +38,16 @@ jobs:
           path: /tmp/bitefinder-input-evaluation.tar
           retention-days: 1
 
+  build-orchestrator:
+    name: Build Orchestrator Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build Docker image for Orchestrator
         working-directory: src/orchestrator
         run: |
@@ -54,11 +64,63 @@ jobs:
           path: /tmp/bitefinder-orchestrator.tar
           retention-days: 1
 
+  build-rag:
+    name: Build RAG Model Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image for RAG Model
+        working-directory: src/ragmodel
+        run: |
+          docker build -t bitefinder-ragmodel:${{ github.sha }} .
+
+      - name: Save Docker image
+        run: |
+          docker save bitefinder-ragmodel:${{ github.sha }} -o /tmp/bitefinder-ragmodel.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-ragmodel
+          path: /tmp/bitefinder-ragmodel.tar
+          retention-days: 1
+
+  build-vlmodel:
+    name: Build VLM Model Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image for VLM Model
+        working-directory: src/vlmodel
+        run: |
+          docker build -t bitefinder-vlmodel:${{ github.sha }} .
+
+      - name: Save Docker image
+        run: |
+          docker save bitefinder-vlmodel:${{ github.sha }} -o /tmp/bitefinder-vlmodel.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-vlmodel
+          path: /tmp/bitefinder-vlmodel.tar
+          retention-days: 1
+
   # Job 2: Run linting and formatting checks
-  lint-and-format:
+  lint-and-format-input-evaluation:
     name: Lint and Format Check
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-input-evaluation
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -83,11 +145,95 @@ jobs:
           docker run --rm bitefinder-input-evaluation:${{ github.sha }} flake8 --max-line-length=120 --extend-ignore=E203,W503 api/
         continue-on-error: true
 
+  lint-and-format-ragmodel:
+    name: Lint and Format Check for RAG Model
+    runs-on: ubuntu-latest
+    needs: build-rag
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-ragmodel
+          path: /tmp
+
+      - name: Load Docker image
+        run: |
+          docker load -i /tmp/bitefinder-ragmodel.tar
+
+      - name: Run Black formatter check
+        run: |
+          docker run --rm bitefinder-ragmodel:${{ github.sha }} black --check --line-length 120 api/
+        continue-on-error: false
+
+      - name: Run Flake8 linter
+        run: |
+          docker run --rm bitefinder-ragmodel:${{ github.sha }} flake8 --max-line-length=120 --extend-ignore=E203,W503 api/
+        continue-on-error: true
+
+  lint-and-format-vlmodel:
+    name: Lint and Format Check for VLM Model
+    runs-on: ubuntu-latest
+    needs: build-vlmodel
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-vlmodel
+          path: /tmp
+
+      - name: Load Docker image
+        run: |
+          docker load -i /tmp/bitefinder-vlmodel.tar
+
+      - name: Run Black formatter check
+        run: |
+          docker run --rm bitefinder-vlmodel:${{ github.sha }} black --check --line-length 120 api/
+        continue-on-error: false
+
+      - name: Run Flake8 linter
+        run: |
+          docker run --rm bitefinder-vlmodel:${{ github.sha }} flake8 --max-line-length=120 --extend-ignore=E203,W503 api/
+        continue-on-error: true
+
+  lint-and-format-orchestrator:
+    name: Lint and Format Check for Orchestrator
+    runs-on: ubuntu-latest
+    needs: build-orchestrator
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-orchestrator
+          path: /tmp
+
+      - name: Load Docker image
+        run: |
+          docker load -i /tmp/bitefinder-orchestrator.tar
+
+      - name: Run Black formatter check
+        run: |
+          docker run --rm bitefinder-orchestrator:${{ github.sha }} black --check --line-length 120 api/
+        continue-on-error: false
+
+      - name: Run Flake8 linter
+        run: |
+          docker run --rm bitefinder-orchestrator:${{ github.sha }} flake8 --max-line-length=120 --extend-ignore=E203,W503 api/
+        continue-on-error: true
+
   # Job 3: Run unit tests
-  unit-tests:
+  unit-tests-input-evaluation:
     name: Unit Tests
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-input-evaluation
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -115,6 +261,40 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-unit
+          path: coverage/
+        if: always()
+
+  unit-tests-orchestrator:
+    name: Unit Tests for Orchestrator
+    runs-on: ubuntu-latest
+    needs: build-orchestrator
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-orchestrator
+          path: /tmp
+
+      - name: Load Docker image
+        run: |
+          docker load -i /tmp/bitefinder-orchestrator.tar
+
+      - name: Run unit tests
+        run: |
+          docker run --rm bitefinder-orchestrator:${{ github.sha }} pytest tests/unit/ -v --tb=short
+
+      - name: Generate coverage report
+        run: |
+          docker run --rm -v ${{ github.workspace }}/coverage:/app/coverage bitefinder-orchestrator:${{ github.sha }} pytest tests/unit/ --cov=api --cov-report=term --cov-report=xml --cov-report=html:coverage
+        continue-on-error: true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-unit-orchestrator
           path: coverage/
         if: always()
 
