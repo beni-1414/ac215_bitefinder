@@ -6,7 +6,7 @@ import time
 from dotenv import load_dotenv, find_dotenv
 
 # import modified chat() and agent() functions
-from api.routes.rag_pipeline import chat
+from api.services.rag_pipeline import chat
 
 load_dotenv(find_dotenv())
 
