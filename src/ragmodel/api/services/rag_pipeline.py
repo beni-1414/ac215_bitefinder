@@ -1,4 +1,4 @@
-#cli.py file for pinecone with vertex AI
+# This script handles the end-to-end retrieval-augmentation steps (chunking, embedding, and loading into Pinecone).
 
 import os
 from dotenv import load_dotenv, find_dotenv
@@ -20,9 +20,9 @@ from google.genai import errors
 
 # Langchain
 from langchain_text_splitters import CharacterTextSplitter, RecursiveCharacterTextSplitter
-from ragmodel import agent_tools
 
-from ragmodel.pinecone_adapter import upsert_embeddings, query_by_vector
+# pinecone
+from api.services.pinecone_adapter import upsert_embeddings, query_by_vector
 
 # Setup
 GCP_PROJECT = os.environ["GCP_PROJECT"]
@@ -73,7 +73,7 @@ bug_mappings = {
 }
 
 def _get_semantic_chunker():
-    from semantic_splitter import SemanticChunker
+    from ac215_bitefinder.src.ragmodel.api.services.semantic_splitter import SemanticChunker
     return SemanticChunker
 
 
