@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 def create_index():
     pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
     name = os.environ.get("PINECONE_INDEX", "bugbite-rag")

@@ -2,9 +2,11 @@ import os
 from typing import List, Dict, Any
 from pinecone import Pinecone
 
+
 def _index():
     pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
     return pc.Index(os.environ["PINECONE_INDEX"])
+
 
 def upsert_embeddings(
     ids: List[str],
@@ -19,6 +21,7 @@ def upsert_embeddings(
         md.setdefault("text", texts[i])  # store chunk text for retrieval
         items.append({"id": ids[i], "values": vectors[i], "metadata": md})
     idx.upsert(items)
+
 
 def query_by_vector(
     query_vec: List[float],

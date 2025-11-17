@@ -1,4 +1,3 @@
-import json
 import os
 from google import genai
 from google.genai import types
@@ -31,7 +30,7 @@ get_book_by_author_func = types.FunctionDeclaration(
             },
             "search_content": {
                 "type": "string",
-                "description": "Search text used to retrieve relevant chunks from the vector database. The search term is embedded and compared against stored document embeddings using cosine similarity.",
+                "description": "Search text used to retrieve relevant chunks from the vector database",
             },
         },
         "required": ["bug", "search_content"],
@@ -42,9 +41,7 @@ get_book_by_author_func = types.FunctionDeclaration(
 def get_book_by_author(bug, search_content, collection, embed_func):
     """query the vector db for bug + search_content"""
     query_embedding = embed_func(search_content)
-    results = collection.query(
-        query_embeddings=[query_embedding], n_results=10, where={"bug": bug}
-    )
+    results = collection.query(query_embeddings=[query_embedding], n_results=10, where={"bug": bug})
     return "\n".join(results["documents"][0])
 
 

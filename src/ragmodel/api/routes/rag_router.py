@@ -12,29 +12,23 @@ load_dotenv(find_dotenv())
 
 router = APIRouter()
 
+
 # request schema
 class ChatRequest(BaseModel):
     symptoms: str
     conf: float
     bug_class: str
 
+
 @router.post("/chat")
 def rag_preprocess_chat(request: ChatRequest):
     start_time = time.time()
     try:
         # run pre-LLM pipeline (embedding, retrieval, prompt assembly)
-        payload = chat(
-            symptoms=request.symptoms,
-            conf=request.conf,
-            bug_class=request.bug_class
-        )
+        payload = chat(symptoms=request.symptoms, conf=request.conf, bug_class=request.bug_class)
 
         latency_ms = int((time.time() - start_time) * 1000)
-        return JSONResponse({
-            "status": "ok",
-            "payload": payload,
-            "latency_ms": latency_ms
-        })
+        return JSONResponse({"status": "ok", "payload": payload, "latency_ms": latency_ms})
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

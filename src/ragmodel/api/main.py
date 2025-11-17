@@ -1,7 +1,7 @@
 # FastAPI entrypoint for the RAG preprocessor service
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from api.routes import rag_router 
+from api.routes import rag_router
 
 api = FastAPI(title="RAG Preprocessor Service")
 
@@ -15,6 +15,7 @@ api.add_middleware(
 
 # ✅ include the router with the /rag prefix
 api.include_router(rag_router.router, prefix="/rag")
+
 
 @api.get("/")
 def root():
