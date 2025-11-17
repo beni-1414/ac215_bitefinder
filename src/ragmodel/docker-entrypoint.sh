@@ -27,7 +27,7 @@ uvicorn_server_dev() {
 uvicorn_server_prod() {
     uvicorn api.main:api \
         --host 0.0.0.0 \
-        --port 8080 \
+        --port 9000 \
         --lifespan on
 }
 

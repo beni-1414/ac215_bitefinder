@@ -1,14 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    reactStrictMode: true,
-    webpack: (config) => {
-        config.module.rules.push({
-            test: /\.svg$/,
-            use: ["@svgr/webpack"]
-        });
-        return config;
-    },
-    reactStrictMode: false,
-};
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://orchestrator:9000/:path*', // proxy to orchestrator inside docker
+      },
+    ]
+  },
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig
