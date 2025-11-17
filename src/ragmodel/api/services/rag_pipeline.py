@@ -25,7 +25,7 @@ from api.services.pinecone_adapter import upsert_embeddings, query_by_vector
 load_dotenv(find_dotenv())
 
 # Setup
-GCP_PROJECT = os.environ["GCP_PROJECT"]
+GCP_PROJECT = os.environ.get("GCP_PROJECT", "test-project")
 GCP_LOCATION = "us-central1"
 EMBEDDING_MODEL = "text-embedding-004"
 GENERATIVE_MODEL = "gemini-2.0-flash-001"
