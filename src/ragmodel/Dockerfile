@@ -2,28 +2,14 @@
 FROM python:3.12-slim-bookworm
 
 ARG DEBIAN_PACKAGES="build-essential curl"
-
-# Prevent apt from showing prompts
 ENV DEBIAN_FRONTEND=noninteractive
-
-# Python wants UTF-8 locale
 ENV LANG=C.UTF-8
-
-# Tell Python to disable buffering so we don't lose any logs.
 ENV PYTHONUNBUFFERED=1
 
-# Tell uv to copy packages from the wheel into the site-packages
+# uv settings
 ENV UV_LINK_MODE=copy
 ENV UV_PROJECT_ENVIRONMENT=/.venv
-##ENV UV_PROJECT_ENVIRONMENT=/.venv
 
-
-# ENV GOOGLE_APPLICATION_CREDENTIALS=../secrets/llm-service-account.json
-# ENV GCP_PROJECT="mineral-style-471117-k1"
-
-
-# Ensure we have an up to date baseline, install dependencies and
-# create a user so we don't run the app as root
 RUN set -ex; \
     for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done && \
     apt-get update && \
@@ -39,34 +25,23 @@ RUN set -ex; \
     mkdir -p /.venv && \
     chown app:app /.venv
 
-# Switch to the new user
 USER app
-# Workdir inside /app
 WORKDIR /app
 
-# Copy dependency files first for better layer caching
+# Copy dependency files
 COPY --chown=app:app pyproject.toml uv.lock* ./
 
-# Install dependencies in a separate layer for better caching
+# Install dependencies
 RUN uv sync --frozen
 
 # Copy the source code
-COPY --chown=app:app . ./
-# COPY --chown=app:app pyproject.toml uv.lock* ./
+COPY --chown=app:app . .
 
+# Add the Docker entrypoint
+COPY --chown=app:app docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
-# RUN uv sync --frozen
-# Copy the rest of the source code
-#COPY --chown=app:app . ./
+# Expose the service port
+EXPOSE 8080
 
-# Entry point
-ENTRYPOINT ["/bin/bash"]
-# Get into the uv virtual environment shell
-CMD ["-c", "source /.venv/bin/activate  && exec bash"]
-#ENTRYPOINT ["/bin/bash","docker-entrypoint.sh"]
-#CMD ["/bin/bash"]
-
-# This is done for the tutorial only    ENV GOOGLE_APPLICATION_CREDENTIALS=secrets/mega-pipeline.json
-
-
-
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

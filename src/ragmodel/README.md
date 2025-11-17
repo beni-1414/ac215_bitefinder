@@ -21,6 +21,8 @@ This service implements a modular retrieval-augmented generation (RAG) pipeline 
 | `api/__init__.py`               | Marks the `api` directory as a Python package and exposes submodules for routes, services, and scripts.                                                    |
 | `Dockerfile`                    | Defines the build instructions for containerizing the RAG application.                                                                                     |
 | `docker-compose.yml`            | Configures how the RAG container runs and interacts with other services (e.g., orchestrator, databases).                                                   |
+| `docker-entrypoint.sh` | Entrypoint script for the RAG container. Activates the virtual environment inside the image, loads environment variables, and launches the FastAPI server (DEV mode drops you into a shell; PROD mode auto-starts `uvicorn`). |
+| `docker-shell.sh` | Local development runner for the RAG service. Builds the Docker image, mounts the api/ code and secrets/ directory, exports env variables from env.dev, and launches the container in DEV mode on the shared bitefinder-network. |
 | `pyproject.toml`                | Declares your project’s metadata, dependencies, and package structure. Ensures that `api/` is treated as the installable Python package for imports like `api.services.*`. |
 
 
@@ -69,13 +71,39 @@ This pipeline:
 - upserts them into Pinecone
 - Once this is done, vector DB is ready for retrieval.
 
+## Run the RAG Service in Docker
+
+The RAG service can also be launched as a container using the included shell wrapper.
+This automatically builds the Docker image, mounts your code and secrets, and starts the service in development mode.
+
+### Start the container
+From inside src/ragmodel/, run:
+```
+sh docker-shell.sh
+```
+
+### Inside the container (DEV mode)
+Once the container starts, run:
+```
+uvicorn_server
+```
+The RAG API will be served at:
+```http://localhost:9000/rag/chat```
+
+### Test with curl
+```
+curl -X POST http://127.0.0.1:9000/rag/chat \
+  -H "Content-Type: application/json" \
+  -d '{"symptoms": "itchy red bumps", "conf": 0.9, "bug_class": "mosquito"}'
+```
+
 ## Run the API Locally
 Run from inside the `ragmodel/` directory:
 ```
 uvicorn api.main:api --reload --port 8080
 ```
 
-## Example cURL Request: 
+### Test with curl
 ```
 curl -X POST http://127.0.0.1:8080/rag/chat \
      -H "Content-Type: application/json" \
