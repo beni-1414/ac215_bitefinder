@@ -298,6 +298,47 @@ jobs:
           path: coverage/
         if: always()
 
+    unit-tests-ragmodel:
+      name: Unit Tests for RAG Model
+      runs-on: ubuntu-latest
+      needs: build-rag
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+
+        - name: Download Docker image
+          uses: actions/download-artifact@v4
+          with:
+            name: docker-image-ragmodel
+            path: /tmp
+
+        - name: Load Docker image
+          run: |
+            docker load -i /tmp/bitefinder-ragmodel.tar
+
+        - name: Run unit tests
+          run: |
+            docker run --rm bitefinder-ragmodel:${{ github.sha }} \
+              python -m tests.unit.test_rag_pipeline
+
+            docker run --rm bitefinder-ragmodel:${{ github.sha }} \
+              python -m tests.unit.test_rag_router
+
+        - name: Generate coverage report
+          run: |
+            docker run --rm -v ${{ github.workspace }}/coverage:/app/coverage \
+              bitefinder-ragmodel:${{ github.sha }} \
+              pytest tests/unit/ --cov=api --cov-report=term --cov-report=xml --cov-report=html:coverage
+          continue-on-error: true
+
+        - name: Upload coverage report
+          uses: actions/upload-artifact@v4
+          with:
+            name: coverage-report-unit-ragmodel
+            path: coverage/
+          if: always()
+
+
   # Job 4: Run integration tests
   # integration-tests:
   #   name: Integration Tests
