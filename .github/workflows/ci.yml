@@ -91,7 +91,7 @@ jobs:
           retention-days: 1
 
   build-vlmodel:
-    name: Build VLM Model Docker Image
+    name: Build VL Model Docker Image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -100,7 +100,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image for VLM Model
+      - name: Build Docker image for VL Model
         working-directory: src/vlmodel
         run: |
           docker build -t bitefinder-vlmodel:${{ github.sha }} .
@@ -174,7 +174,7 @@ jobs:
         continue-on-error: true
 
   lint-and-format-vlmodel:
-    name: Lint and Format Check for VLM Model
+    name: Lint and Format Check for VL Model
     runs-on: ubuntu-latest
     needs: build-vlmodel
     steps:

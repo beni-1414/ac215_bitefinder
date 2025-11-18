@@ -3,7 +3,7 @@
 set -e # Exit on error
 
 source ../../env.dev # Read the settings file
-export IMAGE_NAME="vlmodel"
+export IMAGE_NAME="bitefinder-vlmodel"
 
 # Create the network if we don't have it yet
 docker network inspect bitefinder-network >/dev/null 2>&1 || docker network create bitefinder-network
