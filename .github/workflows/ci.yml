@@ -98,24 +98,19 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-      - name: Configure Docker for GCP Artifact Registry
-        run: |
-          gcloud auth configure-docker us-east1-docker.pkg.dev --quiet
-      - name: Build and Push Docker Image
+      - name: Build Docker image for VL Model
         working-directory: src/vlmodel
         run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            --push \
-            -t us-east1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/bitefinder-vlmodel:${{ github.sha }} \
-            .
-        env:
-          PROJECT_ID: bitefinder-474614
-          REPO_NAME: bitefinder-images
+          docker build -t bitefinder-vlmodel:${{ github.sha }} .
+      - name: Save Docker image
+        run: |
+          docker save bitefinder-vlmodel:${{ github.sha }} -o /tmp/bitefinder-vlmodel.tar
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-vlmodel
+          path: /tmp/bitefinder-vlmodel.tar
+          retention-days: 1
 
   # Job 2: Run linting and formatting checks
   lint-and-format-input-evaluation:

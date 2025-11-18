@@ -10,6 +10,7 @@ import os
 import torch
 from google.cloud import storage
 from api.package.training.model import model_classes
+from api.package.training.utils_gcp import get_secret
 
 router = APIRouter()
 
@@ -18,16 +19,22 @@ model = None
 id_to_label = None
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+
 @router.on_event('startup')
 def load_model():
     global model, id_to_label, device
-    
+
+    # Set W&B API key from GCP Secret Manager
+    wandb_key = get_secret('WANDB_API_KEY')
+    if wandb_key:
+        os.environ['WANDB_API_KEY'] = wandb_key
+
     # Download artifact from W&B
     api = wandb.Api()
     wandb_team = os.environ['WANDB_TEAM']
     wandb_project = os.environ['WANDB_PROJECT']
-    artifact_root = wandb_team+'/'+wandb_project+'/'
-    artifact_name = artifact_root+'labels_v2_20251101_182957:v0' # TODO: make dynamic
+    artifact_root = wandb_team + '/' + wandb_project + '/'
+    artifact_name = artifact_root + 'labels_v2_20251101_182957:v0'  # TODO: make dynamic
     artifact = api.artifact(artifact_name)
     artifact_dir = artifact.download()
 
@@ -45,23 +52,26 @@ def load_model():
     model.classifier.load_state_dict(torch.load(f'{artifact_dir}/classifier.pt', map_location=torch.device(device)))
     model.eval()
 
+
 '''
 InferenceRequest: model for inference request payload (text + image)
 '''
+
+
 class InferenceRequest(BaseModel):
     # Text input
-    text_raw: Optional[str] = None # Raw text as string
-    text_gcs: Optional[str] = None # Path in bucket of text file (e.g., 'user_input/input.txt')
+    text_raw: Optional[str] = None  # Raw text as string
+    text_gcs: Optional[str] = None  # Path in bucket of text file (e.g., 'user_input/input.txt')
     # Image input
-    image_base64: Optional[str] = None # Raw image as base64-encoded string
-    image_gcs: Optional[str] = None # Path in bucket of image file (e.g., 'user_input/input.jpg')
+    image_base64: Optional[str] = None  # Raw image as base64-encoded string
+    image_gcs: Optional[str] = None  # Path in bucket of image file (e.g., 'user_input/input.jpg')
 
     # Ensure exactly one source per input modality
     @model_validator(mode='after')
-    def check_input(self): 
-        if (self.text_raw is None) == (self.text_gcs is None): # Check if both text inputs are empty or given
+    def check_input(self):
+        if (self.text_raw is None) == (self.text_gcs is None):  # Check if both text inputs are empty or given
             raise ValueError('you must provide only one text input: text_raw OR text_gcs.')
-        if (self.image_base64 is None) == (self.image_gcs is None): # Check if both image inputs are empty or given
+        if (self.image_base64 is None) == (self.image_gcs is None):  # Check if both image inputs are empty or given
             raise ValueError('you must provide only one image input: image_base64 OR image_gcs.')
         return self
 
@@ -101,7 +111,7 @@ def predict(request: InferenceRequest):
 
     # Process inputs
     processed = model.processor(text=[text], images=[image], return_tensors='pt', padding=True).to(device)
-    
+
     # Run inference and get predicted label and probabilities
     with torch.no_grad():
         outputs = model(**processed)
@@ -111,8 +121,10 @@ def predict(request: InferenceRequest):
         pred_conf = probs[pred].item()
 
         # Return prediction as JSON response
-        return JSONResponse({
-            'prediction': pred_label,
-            'confidence': round(pred_conf, 4),
-            'probabilities': {id_to_label[i]: float(p) for i, p in enumerate(probs)}
-        })
+        return JSONResponse(
+            {
+                'prediction': pred_label,
+                'confidence': round(pred_conf, 4),
+                'probabilities': {id_to_label[i]: float(p) for i, p in enumerate(probs)},
+            }
+        )
