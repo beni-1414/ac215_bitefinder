@@ -100,27 +100,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Show disk usage
-        run: df -h && docker system df
-
-      - name: Prune docker to free space
-        run: docker system prune -af --volumes
-
-      - name: Build Docker image for VL Model
-        working-directory: src/vlmodel
-        run: |
-          docker build --no-cache -t bitefinder-vlmodel:${{ github.sha }} .
-
-      - name: Save Docker image
-        run: |
-          docker save bitefinder-vlmodel:${{ github.sha }} -o /tmp/bitefinder-vlmodel.tar
-
-      - name: Upload Docker image artifact
-        uses: actions/upload-artifact@v4
+      - name: Build Docker image for VL Model with Buildx
+        uses: docker/build-push-action@v5
         with:
-          name: docker-image-vlmodel
-          path: /tmp/bitefinder-vlmodel.tar
-          retention-days: 1
+          context: src/vlmodel
+          file: src/vlmodel/Dockerfile
+          tags: bitefinder-vlmodel:${{ github.sha }}
+          load: true
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # Job 2: Run linting and formatting checks
   lint-and-format-input-evaluation:
@@ -186,16 +175,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Download Docker image
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image-vlmodel
-          path: /tmp
-
-      - name: Load Docker image
-        run: |
-          docker load -i /tmp/bitefinder-vlmodel.tar
 
       - name: Run Black formatter check
         run: |
