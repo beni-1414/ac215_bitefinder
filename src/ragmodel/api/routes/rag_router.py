@@ -15,6 +15,7 @@ router = APIRouter()
 
 # request schema
 class ChatRequest(BaseModel):
+    question: str | None = None
     symptoms: str
     conf: float
     bug_class: str
@@ -24,11 +25,18 @@ class ChatRequest(BaseModel):
 def rag_preprocess_chat(request: ChatRequest):
     start_time = time.time()
     try:
-        # run pre-LLM pipeline (embedding, retrieval, prompt assembly)
-        payload = chat(symptoms=request.symptoms, conf=request.conf, bug_class=request.bug_class)
-
+        payload = chat(
+            symptoms=request.symptoms,
+            conf=request.conf,
+            bug_class=request.bug_class,
+            question=getattr(request, "question", ""),
+        )
         latency_ms = int((time.time() - start_time) * 1000)
         return JSONResponse({"status": "ok", "payload": payload, "latency_ms": latency_ms})
 
     except Exception as e:
+        import traceback
+
+        print("❌ RAG /chat error:", e)
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

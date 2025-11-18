@@ -288,30 +288,46 @@ def _normalize_conf_to_percent(conf: float) -> float:
 
 
 # changed to stop before LLM output
-def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: str = ""):
+def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: str = "", question: str = ""):
     print("chat()")
 
-    user_question = f"How can I treat {bug_class} bites? My symptoms: {symptoms}"
-    query_embedding = generate_query_embedding(user_question)
-    print("Query:", user_question, "\n")
+    # if the user asked a question, use it; otherwise, fall back to a default
+    if question:
+        user_question = question.strip()
+    else:
+        user_question = f"How can I treat {bug_class} bites? My symptoms: {symptoms}"
 
+    # include bug_class and symptoms to guide retrieval context
+    query_text = f"{user_question}. Symptoms: {symptoms}. Bug type: {bug_class}"
+    query_embedding = generate_query_embedding(query_text)
+    print("Query:", query_text, "\n")
+
+    # vector retrieval
     results = query_by_vector(
         query_vec=query_embedding,
         top_k=10,
         metadata_filter={"bug": {"$eq": bug_class}},
     )
 
+    # normalize confidence and build context
     conf_pct = _normalize_conf_to_percent(conf)
+    context = "\n".join(results["documents"][0]) if results and results.get("documents") else ""
+
+    # dynamically build a prompt that includes the user’s question
     prompt = (
-        f"A patient reported experiencing the following: {symptoms}.\n"
-        f"We believe with {conf_pct:.1f}% confidence that they have a {bug_class} bug bite.\n"
-        "What do you recommend they do to treat it?"
+        f"A patient reported the following symptoms: {symptoms}.\n"
+        f"The model predicts with {conf_pct:.1f}% confidence that this is a {bug_class} bite.\n"
+        f"User question: '{user_question}'\n\n"
+        f"Based on this context, provide a helpful answer."
     )
 
-    context = "\n".join(results["documents"][0])
-
-    # instead of calling the LLM, build a payload and return it
-    payload = {"question": user_question, "prompt": prompt, "context": context, "bug_class": bug_class}
+    payload = {
+        "question": user_question,
+        "prompt": prompt,
+        "context": context,
+        "bug_class": bug_class,
+        "conf": conf,
+    }
 
     print("Prepared payload (pre-LLM):", json.dumps(payload, indent=2))
     return payload
