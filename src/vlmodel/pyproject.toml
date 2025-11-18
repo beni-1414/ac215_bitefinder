@@ -6,12 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "google-cloud-storage",
     "google-cloud-secret-manager",
-    "numpy",
-    "openai",
-    "pandas",
-    "scikit-learn",
     "torch",
-    "torchvision",
     "transformers",
     "wandb",
     "fastapi",
