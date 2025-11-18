@@ -193,12 +193,12 @@ jobs:
 
       - name: Run Black formatter check
         run: |
-          docker run --rm bitefinder-vlmodel:${{ github.sha }} black --check --line-length 145 api/
+          docker run --rm bitefinder-vlmodel:${{ github.sha }} black --check --line-length 140 api/
         continue-on-error: false
 
       - name: Run Flake8 linter
         run: |
-          docker run --rm bitefinder-vlmodel:${{ github.sha }} flake8 --max-line-length=145 --extend-ignore=E203,W503 api/
+          docker run --rm bitefinder-vlmodel:${{ github.sha }} flake8 --max-line-length=140 --extend-ignore=E203,W503 api/
         continue-on-error: true
 
   lint-and-format-orchestrator:

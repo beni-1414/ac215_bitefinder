@@ -20,9 +20,9 @@ dependencies = [
 ]
 
 [tool.black]
-line-length = 145
+line-length = 140
 skip-string-normalization = true
 
 [tool.flake8]
-max-line-length = 145
+max-line-length = 140
 extend-ignore = ["E203"]
