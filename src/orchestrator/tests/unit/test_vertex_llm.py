@@ -17,6 +17,7 @@ class DummyClient:
 
 
 def test_evaluate_text_parses_json(monkeypatch):
+    # Patch aiplatform.init and genai.Client
     monkeypatch.setattr(vv, "aiplatform", type("A", (), {"init": lambda *a, **k: None}))
     monkeypatch.setattr(
         vv,
@@ -27,8 +28,7 @@ def test_evaluate_text_parses_json(monkeypatch):
     inst = vv.VertexLLM()
     out = inst.evaluate_text({"prompt": "p"})
 
-    # FIX: out is already a dict
-    assert out.get("answer") == "ok"
+    assert out.get("answer") == "ok"  # <--- FIX: no json.loads()
 
 
 def test_evaluate_text_handles_invalid_json(monkeypatch):
