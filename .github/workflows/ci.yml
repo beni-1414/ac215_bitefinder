@@ -96,20 +96,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image for VL Model with Buildx
-        uses: docker/build-push-action@v5
+      - name: Build Docker image for VL Model
+        working-directory: src/vlmodel
+        run: |
+          docker build -t bitefinder-vlmodel:${{ github.sha }} .
+      - name: Save Docker image
+        run: |
+          docker save bitefinder-vlmodel:${{ github.sha }} -o /tmp/bitefinder-vlmodel.tar
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
         with:
-          context: src/vlmodel
-          file: src/vlmodel/Dockerfile
-          tags: bitefinder-vlmodel:${{ github.sha }}
-          load: true
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          name: docker-image-vlmodel
+          path: /tmp/bitefinder-vlmodel.tar
+          retention-days: 1
 
   # Job 2: Run linting and formatting checks
   lint-and-format-input-evaluation:
