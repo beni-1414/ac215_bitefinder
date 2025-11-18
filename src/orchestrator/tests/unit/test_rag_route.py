@@ -6,7 +6,7 @@ from api.schemas import RAGRequest
 
 def test_rag_route_builds_prompt_and_calls_llm(monkeypatch):
     # Provide a fake RAG response with context
-    fake_rag = {"context": "context text"}
+    fake_rag = {"status": "ok", "payload": {"context": "context text"}}
     monkeypatch.setattr(rag_module, "post_rag_chat", lambda req: fake_rag)
 
     # Fake LLM

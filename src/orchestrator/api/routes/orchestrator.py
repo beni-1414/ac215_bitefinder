@@ -27,9 +27,9 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
     """
     image_uri = req.image_gcs_uri
     user_text = req.user_text
-    # overwrite = bool(req.overwrite_validation)
+    overwrite = bool(req.overwrite_validation)
     # TEMPORARY OVERRIDE — ALWAYS BYPASS VALIDATION
-    overwrite = True
+    # overwrite = True
     results: Dict[str, Any] = {"image": None, "text": None}
 
     # Call image evaluator if present
@@ -39,6 +39,7 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
     except ServiceError as e:
         # treat as a failed validation
         results["image"] = {"error": str(e)}
+    print("EVAL RESULTS:", results)
 
     # Call text evaluator if present
     try:
@@ -53,6 +54,7 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
             results["text"] = post_input_eval_text(txt_payload)
     except ServiceError as e:
         results["text"] = {"error": str(e)}
+    print("EVAL RESULTS:", results)
 
     # Decide whether to return a request for new input
     image_fail = False
@@ -93,7 +95,7 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
     # conf = vl_resp.confidence
 
     # temporarily skip VLM call while the model service is offline
-    pred = "mosquito"
+    pred = "tick"
     conf = 0.85
     print("⚠️  VLM model skipped — returning stub prediction.")
 

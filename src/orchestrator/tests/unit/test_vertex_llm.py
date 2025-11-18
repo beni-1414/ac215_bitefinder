@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 
 import api.services.vertex_llm as vv
 
@@ -25,7 +26,7 @@ def test_evaluate_text_parses_json(monkeypatch):
 
     inst = vv.VertexLLM()
     out = inst.evaluate_text({"prompt": "p"})
-    assert out.get("answer") == "ok"
+    assert json.loads(out).get("answer") == "ok"
 
 
 def test_evaluate_text_handles_invalid_json(monkeypatch):
