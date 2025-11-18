@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-import inference_router
+import api.vlmodel_router as vlmodel_router
 
 # Setup FastAPI app
-app = FastAPI(title='Vision-Language Model Inference API')
+api = FastAPI(title='Vision-Language Model Inference API')
 
 # Enable CORSMiddleware
-app.add_middleware(
+api.add_middleware(
     CORSMiddleware,
     allow_credentials=False,
     allow_origins=['*'],
@@ -15,4 +15,4 @@ app.add_middleware(
 )
 
 # Include inference router
-app.include_router(inference_router.router, prefix='/vlmodel')
+api.include_router(vlmodel_router.router, prefix='/vlmodel')

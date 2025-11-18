@@ -9,7 +9,7 @@ import wandb
 import os
 import torch
 from google.cloud import storage
-from package.training.model import model_classes
+from api.package.training.model import model_classes
 
 router = APIRouter()
 

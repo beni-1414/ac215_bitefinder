@@ -43,12 +43,22 @@ COPY --chown=app:app pyproject.toml uv.lock* ./
 # Install dependencies in a separate layer for better caching
 RUN uv sync --frozen
 
-# Copy the rest of the source code
-COPY --chown=app:app . ./
+# Add virtualenv's bin directory to PATH
+ENV PATH="/.venv/bin:${PATH}"
 
-RUN uv sync
+# Copy source code
+COPY --chown=app:app api/ ./api/
 
-# Entry point
-ENTRYPOINT ["/bin/bash"]
-# Get into the uv virtual environment shell
-CMD ["-c", "source /.venv/bin/activate && exec bash"]
+# Copy tests and scripts
+COPY --chown=app:app tests/ ./tests/
+COPY --chown=app:app pytest.ini ./
+COPY --chown=app:app docker-entrypoint.sh ./
+
+USER root
+RUN chmod +x docker-entrypoint.sh
+USER app
+
+# Expose service port
+EXPOSE 9000
+
+ENTRYPOINT ["/bin/bash", "docker-entrypoint.sh"]
