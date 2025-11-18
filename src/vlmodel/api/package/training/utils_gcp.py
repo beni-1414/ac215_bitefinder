@@ -1,6 +1,7 @@
 from google.cloud import secretmanager
 import os
 
+
 def get_secret(secret_id: str) -> str:
     """Retrieve a secret from Google Secret Manager."""
     try:

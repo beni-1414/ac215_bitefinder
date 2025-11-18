@@ -8,8 +8,9 @@ from training.trainer import Trainer
 from training.model import model_classes
 from training.dataset import BugBitePairedDataset
 
+
 def main():
-    print(f"🚀 Starting training job...")
+    print("🚀 Starting training job...")
 
     # Define training arguments
     parser = argparse.ArgumentParser()
@@ -24,15 +25,17 @@ def main():
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-s', '--save', action='store_true')
-    
+
     # Parse training arguments
     args = parser.parse_args()
     model_id = args.model
     num_epochs = args.epochs
     batch_size = args.batch_size
     lr = args.lr
-    if args.device: device = torch.device(args.device)
-    else: device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if args.device:
+        device = torch.device(args.device)
+    else:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     text_fname = args.text_fname
     data_root_dir = args.data_root_dir
     run_id = args.run_id
@@ -56,12 +59,12 @@ def main():
         text_fname=text_fname,
         seed=seed,
     )
-    
+
     # Initialize model
     model_class = model_classes[model_id]
     model = model_class(num_labels=dataset.num_labels, freeze_params=True)
     optim_class = optim.Adam
-    
+
     # Initialize trainer
     trainer = Trainer(
         dataset=dataset,
@@ -78,11 +81,12 @@ def main():
         save=save,
         save_dir='models',
     )
-    
+
     # Run training/validation loop
-    print(f"🤖 Starting training...")
+    print("🤖 Starting training...")
     trainer.train_eval()
-    print(f"✅ Training complete!")
+    print("✅ Training complete!")
+
 
 if __name__ == '__main__':
     main()
