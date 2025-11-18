@@ -54,6 +54,7 @@ COPY --chown=app:app tests/ ./tests/
 COPY --chown=app:app pytest.ini ./
 COPY --chown=app:app docker-entrypoint.sh ./
 
+# Make entrypoint executable
 USER root
 RUN chmod +x docker-entrypoint.sh
 USER app
