@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "google-cloud-storage",
     "google-cloud-secret-manager",
+    "pillow",
     "torch",
     "transformers",
     "wandb",
