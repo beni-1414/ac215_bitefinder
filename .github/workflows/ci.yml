@@ -103,7 +103,10 @@ jobs:
       - name: Build Docker image for VL Model
         working-directory: src/vlmodel
         run: |
-          docker build -t bitefinder-vlmodel:${{ github.sha }} .
+          docker build --no-cache -t bitefinder-vlmodel:${{ github.sha }} .
+
+      - name: Prune Docker
+        run: docker system prune -af --volumes
 
       - name: Save Docker image
         run: |
