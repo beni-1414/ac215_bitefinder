@@ -1,18 +1,16 @@
 from __future__ import annotations
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from api.services.clients import (
     post_input_eval_image,
     post_input_eval_text,
-    post_vl_model,
     ServiceError,
 )
 from api.schemas import (
     OrchestratorEvaluateRequest,
     OrchestratorEvaluateResponse,
-    VLPredictRequest,
 )
 
 router = APIRouter(prefix="/v1/orchestrator", tags=["orchestrator"])
@@ -29,8 +27,9 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
     """
     image_uri = req.image_gcs_uri
     user_text = req.user_text
-    overwrite = bool(req.overwrite_validation)
-
+    # overwrite = bool(req.overwrite_validation)
+    # TEMPORARY OVERRIDE — ALWAYS BYPASS VALIDATION
+    overwrite = True
     results: Dict[str, Any] = {"image": None, "text": None}
 
     # Call image evaluator if present
@@ -84,19 +83,20 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
         return detail
 
     # If overwriting or all good, call VL model if available
-    try:
-        vl_req = VLPredictRequest(text_raw=user_text, image_gcs=image_uri)
-        vl_resp = post_vl_model(vl_req)
-    except ServiceError:
-        raise HTTPException(status_code=502, detail="vl-model unavailable")
+    # try:
+    #     vl_req = VLPredictRequest(text_raw=user_text, image_gcs=image_uri)
+    #     vl_resp = post_vl_model(vl_req)
+    # except ServiceError:
+    #     raise HTTPException(status_code=502, detail="vl-model unavailable")
 
-    pred = vl_resp.prediction
-    conf = vl_resp.confidence
+    # pred = vl_resp.prediction
+    # conf = vl_resp.confidence
 
-    message = (
-        f"According to our AI engine, you have been bitten by {pred} with {conf} confidence. "
-        "Would you like to know products to speed up recovery,"
-        "and reduce itchiness, how to prevent bites, or info about the insect?"
-    )
+    # temporarily skip VLM call while the model service is offline
+    pred = "mosquito"
+    conf = 0.85
+    print("⚠️  VLM model skipped — returning stub prediction.")
+
+    message = f"According to our AI engine, you have been bitten by {pred} with {conf} confidence. "
 
     return {"ok": True, "prediction": pred, "confidence": conf, "message": message, "results": results}

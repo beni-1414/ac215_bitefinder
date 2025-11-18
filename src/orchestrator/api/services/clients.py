@@ -4,14 +4,14 @@ from typing import Any, Dict
 import httpx
 
 from api.config import settings
-from api.schemas import VLPredictRequest, VLPredictResponse, RAGRequest, RAGResponse
+from api.schemas import VLPredictRequest, VLPredictResponse, RAGRequest, RAGModelWrapper
 
 
 class ServiceError(RuntimeError):
     pass
 
 
-def post_input_eval_text(payload: Dict[str, Any], timeout: float = 5.0) -> Dict[str, Any]:
+def post_input_eval_text(payload: Dict[str, Any], timeout: float = 15.0) -> Dict[str, Any]:
     url = f"{settings.INPUT_EVAL_URL}/v1/evaluate/text"
     with httpx.Client(timeout=timeout) as c:
         r = c.post(url, json=payload)
@@ -20,7 +20,7 @@ def post_input_eval_text(payload: Dict[str, Any], timeout: float = 5.0) -> Dict[
     return r.json()
 
 
-def post_input_eval_image(payload: Dict[str, Any], timeout: float = 10.0) -> Dict[str, Any]:
+def post_input_eval_image(payload: Dict[str, Any], timeout: float = 20.0) -> Dict[str, Any]:
     url = f"{settings.INPUT_EVAL_URL}/v1/evaluate/image"
     with httpx.Client(timeout=timeout) as c:
         r = c.post(url, json=payload)
@@ -49,16 +49,37 @@ def post_vl_model(req: VLPredictRequest, timeout: float = 10.0) -> VLPredictResp
 #     return RAGResponse.model_validate(r.json())
 
 
-def post_rag_chat(req: RAGRequest, timeout: float = 10.0) -> RAGResponse:
+# def post_rag_chat(req: RAGRequest, timeout: float = 10.0) -> RAGResponse:
+#     url = f"{settings.RAG_MODEL_URL}/rag/chat"
+#     with httpx.Client(timeout=timeout) as c:
+#         payload = req.model_dump()
+
+#         # safely handle missing confidence
+#         if payload.get("conf") is None:
+#             payload["conf"] = 0.0  # default low confidence
+
+#         # optional: ensure it's numeric
+#         try:
+#             payload["conf"] = float(payload["conf"])
+#         except Exception:
+#             payload["conf"] = 0.0
+
+#         r = c.post(url, json=payload)
+
+#     if r.status_code >= 400:
+#         raise ServiceError(f"rag-model error {r.status_code}: {r.text}")
+
+
+#     return RAGResponse.model_validate(r.json())
+def post_rag_chat(req: RAGRequest, timeout: float = 10.0) -> RAGModelWrapper:
     url = f"{settings.RAG_MODEL_URL}/rag/chat"
     with httpx.Client(timeout=timeout) as c:
         payload = req.model_dump()
 
-        # safely handle missing confidence
+        # normalize confidence
         if payload.get("conf") is None:
-            payload["conf"] = 0.0  # default low confidence
+            payload["conf"] = 0.0
 
-        # optional: ensure it's numeric
         try:
             payload["conf"] = float(payload["conf"])
         except Exception:
@@ -69,4 +90,4 @@ def post_rag_chat(req: RAGRequest, timeout: float = 10.0) -> RAGResponse:
     if r.status_code >= 400:
         raise ServiceError(f"rag-model error {r.status_code}: {r.text}")
 
-    return RAGResponse.model_validate(r.json())
+    return RAGModelWrapper.model_validate(r.json())

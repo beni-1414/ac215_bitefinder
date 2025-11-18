@@ -292,10 +292,12 @@ def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: 
     print("chat()")
 
     # if the user asked a question, use it; otherwise, fall back to a default
-    if question:
-        user_question = question.strip()
-    else:
-        user_question = f"How can I treat {bug_class} bites? My symptoms: {symptoms}"
+    # always use exactly what the user selected or typed
+    user_question = (question or "").strip()
+
+    # fallback if somehow empty
+    if not user_question:
+        user_question = f"General information about {bug_class} bites"
 
     # include bug_class and symptoms to guide retrieval context
     query_text = f"{user_question}. Symptoms: {symptoms}. Bug type: {bug_class}"
@@ -311,16 +313,59 @@ def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: 
 
     # normalize confidence and build context
     conf_pct = _normalize_conf_to_percent(conf)
-    context = "\n".join(results["documents"][0]) if results and results.get("documents") else ""
+    docs = results.get("documents", [])
+    context = "\n".join(docs[0]) if docs and len(docs[0]) > 0 else ""
 
     # dynamically build a prompt that includes the user’s question
-    prompt = (
-        f"A patient reported the following symptoms: {symptoms}.\n"
-        f"The model predicts with {conf_pct:.1f}% confidence that this is a {bug_class} bite.\n"
-        f"User question: '{user_question}'\n\n"
-        f"Based on this context, provide a helpful answer."
-    )
+    # determine the task based on what the user clicked
+    q_low = user_question.lower()
 
+    if "relief" in q_low or "treatment" in q_low:
+        task = (
+            "Provide treatment and symptom-relief guidance ONLY. "
+            "Do NOT include prevention tips. "
+            "Do NOT describe the insect."
+        )
+    elif "prevention" in q_low:
+        task = (
+            "Provide prevention guidance ONLY. " "Do NOT include treatment information. " "Do NOT describe the insect."
+        )
+    elif "about" in q_low or "insect" in q_low:
+        task = (
+            "Describe the insect ONLY (appearance, behavior, risks). " "Do NOT include treatment or prevention advice."
+        )
+    else:
+        # fallback for free-text questions
+        task = f"Answer the user question appropriately: {user_question}"
+
+    # final enforced prompt
+    prompt = f"""
+    User question: "{user_question}"
+
+    Detected insect: {bug_class}
+    Symptoms: {symptoms}
+    Model confidence: {conf_pct:.1f}%
+
+    Task: {task}
+
+    Context you may optionally use:
+    {context}
+
+    Respond with a concise, helpful, accurate answer following ONLY the Task instructions.
+    """
+
+    # ensure we always return a non-empty prompt
+    if not prompt or prompt.strip() == "":
+        prompt = (
+            f"User question: '{user_question}'.\n"
+            f"Detected insect: {bug_class}\n"
+            f"Symptoms: {symptoms}\n"
+            f"Model confidence: {conf_pct:.1f}%\n\n"
+            f"Task: {task}\n\n"
+            "No RAG context was found. Provide the requested information based on general insect facts."
+        )
+
+    # IMPORTANT: update payload to include corrected prompt
     payload = {
         "question": user_question,
         "prompt": prompt,
