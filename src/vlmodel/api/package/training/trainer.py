@@ -70,9 +70,7 @@ class Trainer:
 
         self.lr = lr
         self.optimizer_kwargs = {'lr': self.lr}  # Define optimizer arguments
-        self.optimizer = optimizer_class(
-            filter(lambda param: param.requires_grad, model.parameters()), **self.optimizer_kwargs
-        )
+        self.optimizer = optimizer_class(filter(lambda param: param.requires_grad, model.parameters()), **self.optimizer_kwargs)
         self.num_epochs = num_epochs
 
         # Log into W&B
