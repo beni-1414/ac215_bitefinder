@@ -72,6 +72,20 @@ class RAGResponse(BaseModel):
     bug_class: Optional[str] = None
 
 
+class RAGModelPayload(BaseModel):
+    question: Optional[str] = None
+    prompt: Optional[str] = None
+    context: Optional[str] = None
+    bug_class: Optional[str] = None
+    conf: Optional[float] = None
+
+
+class RAGModelWrapper(BaseModel):
+    status: str
+    payload: RAGModelPayload
+    latency_ms: Optional[int] = None
+
+
 # Orchestrator evaluate request
 class OrchestratorEvaluateRequest(BaseModel):
     image_gcs_uri: Optional[str] = None

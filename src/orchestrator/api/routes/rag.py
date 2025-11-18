@@ -1,59 +1,50 @@
 from __future__ import annotations
 from typing import Any, Dict
-from api.schemas import RAGRequest
 
 from fastapi import APIRouter, HTTPException
 
+from api.schemas import RAGRequest
 from api.services.clients import post_rag_chat, ServiceError
 from api.services.vertex_llm import get_llm
-import pathlib
 
 router = APIRouter(prefix="/v1/orchestrator", tags=["rag"])
 
 
-def _load_prompt_template() -> str:
-    p = pathlib.Path(__file__).parent / "prompt_template.md"
-    return p.read_text(encoding="utf-8")
-
-
 @router.post("/rag")
 def orchestrator_rag(req: RAGRequest) -> Dict[str, Any]:
-    """Call the rag model to retrieve context, then format a prompt including
-    the user's question, symptoms, and predicted bite and call a Vertex LLM wrapper.
-
-    Expected body keys: question, symptoms, conf (0..1), bug_class
-    """
-    question = req.question
-    symptoms = req.symptoms or ""
-    bug_class = req.bug_class or ""
-
     try:
-        rag_resp = post_rag_chat(req)
+        rag_payload = post_rag_chat(req)
+        print("🔥 RAW RAG PAYLOAD:", rag_payload)
+
     except ServiceError as e:
-        raise HTTPException(status_code=502, detail=str(e))
+        raise HTTPException(status_code=502, detail=f"ragmodel service error: {str(e)}")
 
-    # Only the 'context' from RAG is relevant for building the LLM prompt
-    if isinstance(rag_resp, dict):
-        context = rag_resp.get("context", "")
-    else:
-        # RAGResponse Pydantic model: access attribute
-        context = getattr(rag_resp, "context", "")
+    # ragmodel returns: { status: "ok", payload: {...}, latency_ms: ... }
+    if rag_payload.status != "ok":
+        raise HTTPException(status_code=500, detail="ragmodel returned non-ok status")
 
-    # Build the prompt using the template and injected variables
-    template = _load_prompt_template()
-    prompt = template.format(
-        context=context or "",
-        question=question or "",
-        symptoms=symptoms or "",
-        bug_class=bug_class or "",
-    )
+    inner = rag_payload.payload
+    prompt = inner.prompt or ""
+    context = inner.context or ""
 
-    # Call the LLM
+    # Fallback prompt if ragmodel returned nothing
+    if not prompt.strip():
+        prompt = (
+            f"User question: '{req.question}'.\n"
+            f"Detected insect: {req.bug_class or 'unknown'}.\n"
+            f"Reported symptoms: {req.symptoms or ''}.\n"
+            f"Confidence: {req.conf or 0.0}.\n\n"
+            "RAG context is unavailable. Provide a helpful general answer "
+            "based only on the information above."
+        )
+
     try:
         llm = get_llm()
         llm_resp = llm.evaluate_text({"prompt": prompt})
     except Exception as e:
-        # If Vertex/LLM fails, surface 502
-        raise HTTPException(status_code=502, detail=str(e))
+        raise HTTPException(status_code=502, detail=f"Vertex LLM error: {str(e)}")
 
-    return {"context": context, "llm": llm_resp}
+    return {
+        "context": context,
+        "llm": llm_resp,
+    }
