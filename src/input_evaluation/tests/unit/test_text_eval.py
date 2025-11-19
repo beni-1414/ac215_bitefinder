@@ -13,7 +13,7 @@ class DummyLLM:
 
     def evaluate_text(self, payload):
         self.calls.append(payload)
-        return self.response
+        return {"text": self.response}  # WRAP response under "text"
 
 
 def _install_dummy_llm(monkeypatch, response):
@@ -25,11 +25,13 @@ def _install_dummy_llm(monkeypatch, response):
 def test_text_eval_combines_history(monkeypatch):
     dummy = _install_dummy_llm(
         monkeypatch,
+        """
         {
-            "complete": True,
-            "improve_message": None,
-            "combined_text": "merged text",
-        },
+            "complete": true,
+            "improve_message": null,
+            "combined_text": "merged text"
+        }
+        """,
     )
 
     client = TestClient(api)
@@ -42,28 +44,28 @@ def test_text_eval_combines_history(monkeypatch):
 
     resp = client.post("/v1/evaluate/text", json=payload)
     assert resp.status_code == 200
-    data = resp.json()
 
+    data = resp.json()
     assert data["complete"] is True
     assert data["combined_text"] == "merged text"
 
-    # pull the last LLM call
-    llm_payload = dummy.calls[-1]
-
-    # your real code builds the prompt using combined content
-    assert "first chunk" in llm_payload["prompt"]
-    assert "second chunk" in llm_payload["prompt"]
-    assert "latest description" in llm_payload["prompt"]
+    # Ensure prompt contains history + current text
+    prompt = dummy.calls[-1]["prompt"]
+    assert "first chunk" in prompt
+    assert "second chunk" in prompt
+    assert "latest description" in prompt
 
 
 def test_text_eval_first_call_suppresses_combined_text(monkeypatch):
     _install_dummy_llm(
         monkeypatch,
+        """
         {
-            "complete": False,
+            "complete": false,
             "improve_message": "need more info",
-            "combined_text": "should not leak",
-        },
+            "combined_text": "should not leak"
+        }
+        """,
     )
 
     client = TestClient(api)
@@ -76,9 +78,8 @@ def test_text_eval_first_call_suppresses_combined_text(monkeypatch):
 
     resp = client.post("/v1/evaluate/text", json=payload)
     assert resp.status_code == 200
-    data = resp.json()
 
-    # first_call suppresses combined_text
+    data = resp.json()
     assert data["complete"] is False
     assert data["improve_message"] == "need more info"
-    assert data["combined_text"] is None
+    assert data["combined_text"] is None  # suppressed on first call
