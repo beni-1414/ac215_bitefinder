@@ -350,27 +350,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download Docker image
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image-vlmodel
-          path: /tmp
-
-      - name: Load Docker image
+      - name: Build test image
         run: |
-          docker load -i /tmp/bitefinder-vlmodel.tar
+          docker build -f Dockerfile -t vlmodel-test src/vlmodel
 
       - name: Run unit tests
         run: |
-          docker run --rm bitefinder-vlmodel:${{ github.sha }} \
-            python -m tests.unit.test_inference
-
-      - name: Generate coverage report
-        run: |
-          docker run --rm -v ${{ github.workspace }}/coverage:/app/coverage \
-            bitefinder-vlmodel:${{ github.sha }} \
+          docker run --rm \
+            -v /tmp/torch-cache:/home/app/.cache \
+            vlmodel-test \
             pytest tests/unit/ --cov=api --cov-report=term --cov-report=xml --cov-report=html:coverage
-        continue-on-error: true
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4

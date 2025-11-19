@@ -2,11 +2,7 @@
 set -e
 
 echo "Container is starting..."
-echo "Architecture: $(uname -m)"
-
-echo "Environment ready."
 echo "Python version: $(python --version 2>/dev/null || echo 'python not found')"
-echo "UV version: $(uv --version 2>/dev/null || echo 'uv not found')"
 
 # If arguments are passed, execute them instead of starting the server
 if [ $# -gt 0 ]; then
