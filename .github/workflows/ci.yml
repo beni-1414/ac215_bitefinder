@@ -107,12 +107,12 @@ jobs:
 
       - name: Configure Docker for Google Artifact Registry
         run: |
-          gcloud auth configure-docker useast1-docker.pkg.dev
+          gcloud auth configure-docker us-east1-docker.pkg.dev
 
       - name: Build and push Docker image to GAR
         working-directory: src/vlmodel
         run: |
-          IMAGE_NAME=useast1-docker.pkg.dev/bitefinder-474614/bitefinder-images/bitefinder-vlmodel:${{ github.sha }}
+          IMAGE_NAME=us-east1-docker.pkg.dev/bitefinder-474614/bitefinder-images/bitefinder-vlmodel:${{ github.sha }}
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
 
@@ -188,11 +188,11 @@ jobs:
 
       - name: Configure Docker for Google Artifact Registry
         run: |
-          gcloud auth configure-docker useast1-docker.pkg.dev
+          gcloud auth configure-docker us-east1-docker.pkg.dev
 
       - name: Pull Docker image from GAR
         run: |
-          IMAGE_NAME=useast1-docker.pkg.dev/bitefinder-474614/bitefinder-images/bitefinder-vlmodel:${{ github.sha }}
+          IMAGE_NAME=us-east1-docker.pkg.dev/bitefinder-474614/bitefinder-images/bitefinder-vlmodel:${{ github.sha }}
           docker pull $IMAGE_NAME
 
       - name: Run Black formatter check
