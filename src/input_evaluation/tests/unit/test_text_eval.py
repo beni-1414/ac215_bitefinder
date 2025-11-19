@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from fastapi.testclient import TestClient
-from api.main import api
+from pathlib import Path
 import api.routes.text_eval as text_route
+from api.main import api
 
 
 class DummyLLM:
@@ -13,21 +16,21 @@ class DummyLLM:
         return self.response
 
 
-def _install_dummy_llm(monkeypatch, response):
+def _patch_llm(monkeypatch, response):
     dummy = DummyLLM(response)
     monkeypatch.setattr(text_route, "get_llm", lambda: dummy)
     return dummy
 
 
 def _patch_template(monkeypatch):
-    # Completely bypass the real JSON template file
-    monkeypatch.setattr(text_route, "load_template", lambda: "CONTENT:\n{content}\nEND")
+    # Your real code calls Path(path).read_text(), so patch THAT.
+    monkeypatch.setattr(Path, "read_text", lambda *args, **kwargs: "CONTENT:\n{content}\nEND")
 
 
 def test_text_eval_combines_history(monkeypatch):
     _patch_template(monkeypatch)
 
-    dummy = _install_dummy_llm(
+    dummy = _patch_llm(
         monkeypatch,
         {
             "complete": True,
@@ -38,7 +41,6 @@ def test_text_eval_combines_history(monkeypatch):
     )
 
     client = TestClient(api)
-
     payload = {
         "user_text": "latest description",
         "history": ["first chunk", "second chunk"],
@@ -48,12 +50,12 @@ def test_text_eval_combines_history(monkeypatch):
 
     resp = client.post("/v1/evaluate/text", json=payload)
     assert resp.status_code == 200
-    data = resp.json()
 
+    data = resp.json()
     assert data["complete"] is True
     assert data["combined_text"] == "merged text"
-    prompt = dummy.calls[-1]["prompt"]
 
+    prompt = dummy.calls[-1]["prompt"]
     assert "first chunk" in prompt
     assert "second chunk" in prompt
     assert "latest description" in prompt
@@ -62,7 +64,7 @@ def test_text_eval_combines_history(monkeypatch):
 def test_text_eval_first_call_suppresses_combined_text(monkeypatch):
     _patch_template(monkeypatch)
 
-    _install_dummy_llm(
+    _patch_llm(
         monkeypatch,
         {
             "complete": False,
@@ -73,7 +75,6 @@ def test_text_eval_first_call_suppresses_combined_text(monkeypatch):
     )
 
     client = TestClient(api)
-
     payload = {
         "user_text": "single description",
         "history": [],
@@ -83,8 +84,8 @@ def test_text_eval_first_call_suppresses_combined_text(monkeypatch):
 
     resp = client.post("/v1/evaluate/text", json=payload)
     assert resp.status_code == 200
-    data = resp.json()
 
+    data = resp.json()
     assert data["complete"] is False
     assert data["improve_message"] == "need more info"
     assert data["combined_text"] is None
