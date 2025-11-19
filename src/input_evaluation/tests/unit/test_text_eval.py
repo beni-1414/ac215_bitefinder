@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
-
 from api.main import api
 import api.routes.text_eval as text_route
 
@@ -13,7 +12,7 @@ class DummyLLM:
 
     def evaluate_text(self, payload):
         self.calls.append(payload)
-        return {"text": self.response}  # WRAP response under "text"
+        return self.response
 
 
 def _install_dummy_llm(monkeypatch, response):
@@ -25,13 +24,11 @@ def _install_dummy_llm(monkeypatch, response):
 def test_text_eval_combines_history(monkeypatch):
     dummy = _install_dummy_llm(
         monkeypatch,
-        """
         {
-            "complete": true,
-            "improve_message": null,
-            "combined_text": "merged text"
-        }
-        """,
+            "complete": True,
+            "improve_message": None,
+            "combined_text": "merged text",
+        },
     )
 
     client = TestClient(api)
@@ -44,12 +41,11 @@ def test_text_eval_combines_history(monkeypatch):
 
     resp = client.post("/v1/evaluate/text", json=payload)
     assert resp.status_code == 200
-
     data = resp.json()
+
     assert data["complete"] is True
     assert data["combined_text"] == "merged text"
 
-    # Ensure prompt contains history + current text
     prompt = dummy.calls[-1]["prompt"]
     assert "first chunk" in prompt
     assert "second chunk" in prompt
@@ -59,13 +55,11 @@ def test_text_eval_combines_history(monkeypatch):
 def test_text_eval_first_call_suppresses_combined_text(monkeypatch):
     _install_dummy_llm(
         monkeypatch,
-        """
         {
-            "complete": false,
+            "complete": False,
             "improve_message": "need more info",
-            "combined_text": "should not leak"
-        }
-        """,
+            "combined_text": "ignore me",
+        },
     )
 
     client = TestClient(api)
@@ -78,8 +72,8 @@ def test_text_eval_first_call_suppresses_combined_text(monkeypatch):
 
     resp = client.post("/v1/evaluate/text", json=payload)
     assert resp.status_code == 200
-
     data = resp.json()
+
     assert data["complete"] is False
     assert data["improve_message"] == "need more info"
-    assert data["combined_text"] is None  # suppressed on first call
+    assert data["combined_text"] is None
