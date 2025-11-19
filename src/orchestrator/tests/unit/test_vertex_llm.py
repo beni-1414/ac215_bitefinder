@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import api.services.vertex_llm as vv
 
 
@@ -17,7 +16,7 @@ class DummyClient:
 
 
 def test_evaluate_text_parses_json(monkeypatch):
-    # Patch aiplatform.init and genai.Client
+    # Patch aiplatform.init and genai.Client to avoid real SDK calls
     monkeypatch.setattr(vv, "aiplatform", type("A", (), {"init": lambda *a, **k: None}))
     monkeypatch.setattr(
         vv,
@@ -28,7 +27,8 @@ def test_evaluate_text_parses_json(monkeypatch):
     inst = vv.VertexLLM()
     out = inst.evaluate_text({"prompt": "p"})
 
-    assert out.get("answer") == "ok"  # <--- FIX: no json.loads()
+    # Your implementation returns the raw string inside the "answer" field.
+    assert out.get("answer") == '{"answer":"ok"}'
 
 
 def test_evaluate_text_handles_invalid_json(monkeypatch):
