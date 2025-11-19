@@ -39,38 +39,6 @@ def post_vl_model(req: VLPredictRequest, timeout: float = 10.0) -> VLPredictResp
     return VLPredictResponse.model_validate(r.json())
 
 
-# def post_rag_chat(req: RAGRequest, timeout: float = 10.0) -> RAGResponse:
-#     # Matches the example curl: POST /rag/chat on the rag model service
-#     url = f"{settings.RAG_MODEL_URL}/rag/chat"
-#     with httpx.Client(timeout=timeout) as c:
-#         r = c.post(url, json=req.model_dump())
-#     if r.status_code >= 400:
-#         raise ServiceError(f"rag-model error {r.status_code}: {r.text}")
-#     return RAGResponse.model_validate(r.json())
-
-
-# def post_rag_chat(req: RAGRequest, timeout: float = 10.0) -> RAGResponse:
-#     url = f"{settings.RAG_MODEL_URL}/rag/chat"
-#     with httpx.Client(timeout=timeout) as c:
-#         payload = req.model_dump()
-
-#         # safely handle missing confidence
-#         if payload.get("conf") is None:
-#             payload["conf"] = 0.0  # default low confidence
-
-#         # optional: ensure it's numeric
-#         try:
-#             payload["conf"] = float(payload["conf"])
-#         except Exception:
-#             payload["conf"] = 0.0
-
-#         r = c.post(url, json=payload)
-
-#     if r.status_code >= 400:
-#         raise ServiceError(f"rag-model error {r.status_code}: {r.text}")
-
-
-#     return RAGResponse.model_validate(r.json())
 def post_rag_chat(req: RAGRequest, timeout: float = 10.0) -> RAGModelWrapper:
     url = f"{settings.RAG_MODEL_URL}/rag/chat"
     with httpx.Client(timeout=timeout) as c:

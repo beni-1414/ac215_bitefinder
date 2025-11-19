@@ -14,7 +14,7 @@ router = APIRouter(prefix="/v1/orchestrator", tags=["rag"])
 def orchestrator_rag(req: RAGRequest) -> Dict[str, Any]:
     try:
         rag_payload = post_rag_chat(req)
-        print("🔥 RAW RAG PAYLOAD:", rag_payload)
+        # print("RAG PAYLOAD:", rag_payload)
 
     except ServiceError as e:
         raise HTTPException(status_code=502, detail=f"ragmodel service error: {str(e)}")

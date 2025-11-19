@@ -56,10 +56,21 @@ def test_post_vl_model_failure(monkeypatch):
 
 
 def test_post_rag_chat_success(monkeypatch):
-    rag_json = {"context": "useful info", "prompt": "p"}
+    rag_json = {
+        "status": "ok",
+        "payload": {"context": "useful info", "prompt": "p", "question": "Q", "bug_class": None, "conf": 0.0},
+        "latency_ms": 10,
+    }
+
     resp = DummyResponse(200, rag_json)
-    monkeypatch.setattr(clients, "httpx", SimpleNamespace(Client=lambda timeout=None: DummyClient(resp)))
+    monkeypatch.setattr(
+        clients,
+        "httpx",
+        SimpleNamespace(Client=lambda timeout=None: DummyClient(resp)),
+    )
 
     req = RAGRequest(question="Q")
     out = clients.post_rag_chat(req)
-    assert out.context == "useful info"
+
+    # FIX: use payload.context instead of out.context
+    assert out.payload.context == "useful info"

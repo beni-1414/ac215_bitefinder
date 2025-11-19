@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 from api.routes import rag as rag_module
-from api.schemas import RAGRequest
+from api.schemas import RAGRequest, RAGModelWrapper, RAGModelPayload
 
 
 def test_rag_route_builds_prompt_and_calls_llm(monkeypatch):
-    # Provide a fake RAG response with context
-    fake_rag = {"context": "context text"}
-    monkeypatch.setattr(rag_module, "post_rag_chat", lambda req: fake_rag)
+    # Provide a fake RAGModelWrapper with context
+    fake_wrapper = RAGModelWrapper(
+        status="ok",
+        payload=RAGModelPayload(context="context text"),
+        latency_ms=5,
+    )
+    monkeypatch.setattr(rag_module, "post_rag_chat", lambda req: fake_wrapper)
 
     # Fake LLM
     class DummyLLM:
@@ -18,5 +22,6 @@ def test_rag_route_builds_prompt_and_calls_llm(monkeypatch):
 
     req = RAGRequest(question="How to treat?", symptoms="itchy red bumps", conf=0.9, bug_class="mosquito")
     out = rag_module.orchestrator_rag(req)
+
     assert out["context"] == "context text"
     assert "answer" in out["llm"]
