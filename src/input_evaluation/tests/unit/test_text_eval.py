@@ -43,11 +43,17 @@ def test_text_eval_combines_history(monkeypatch):
     resp = client.post("/v1/evaluate/text", json=payload)
     assert resp.status_code == 200
     data = resp.json()
+
     assert data["complete"] is True
     assert data["combined_text"] == "merged text"
-    prompt = dummy.calls[-1]["prompt"]
-    assert "first chunk" in prompt and "second chunk" in prompt
-    assert "latest description" in prompt
+
+    # pull the last LLM call
+    llm_payload = dummy.calls[-1]
+
+    # your real code builds the prompt using combined content
+    assert "first chunk" in llm_payload["prompt"]
+    assert "second chunk" in llm_payload["prompt"]
+    assert "latest description" in llm_payload["prompt"]
 
 
 def test_text_eval_first_call_suppresses_combined_text(monkeypatch):
@@ -71,6 +77,8 @@ def test_text_eval_first_call_suppresses_combined_text(monkeypatch):
     resp = client.post("/v1/evaluate/text", json=payload)
     assert resp.status_code == 200
     data = resp.json()
+
+    # first_call suppresses combined_text
     assert data["complete"] is False
     assert data["improve_message"] == "need more info"
     assert data["combined_text"] is None
