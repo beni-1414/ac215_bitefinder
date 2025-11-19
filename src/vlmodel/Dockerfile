@@ -1,66 +1,58 @@
-# ----------------------
-# Stage 1: Builder
-# ----------------------
-FROM python:3.12-slim-bookworm AS builder
+# Use the official Debian-hosted Python image
+FROM python:3.12-slim-bookworm
 
 ARG DEBIAN_PACKAGES="build-essential curl"
 
-# Prevent apt prompts
+# Prevent apt from showing prompts
 ENV DEBIAN_FRONTEND=noninteractive
+
+# Python wants UTF-8 locale
 ENV LANG=C.UTF-8
+
+# Tell Python to disable buffering so we don't lose any logs.
 ENV PYTHONUNBUFFERED=1
+
+# Tell uv to copy packages from the wheel into the site-packages
 ENV UV_LINK_MODE=copy
 ENV UV_PROJECT_ENVIRONMENT=/.venv
 
-# Install build tools, pip, uv
-RUN set -eux; \
+# Ensure we have an up to date baseline, install dependencies and
+# create a user so we don't run the app as root
+RUN set -ex; \
+    for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done && \
     apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends $DEBIAN_PACKAGES && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir uv && \
-    mkdir -p /.venv && \
-    chmod 777 /.venv
-
-WORKDIR /app
-
-# Copy dependency files and install packages in virtualenv
-COPY pyproject.toml uv.lock* ./
-RUN uv sync --frozen
-
-# Copy app code
-COPY api/ ./api/
-COPY tests/ ./tests/
-COPY pytest.ini ./
-COPY docker-entrypoint.sh ./
-
-# ----------------------
-# Stage 2: Runtime
-# ----------------------
-FROM python:3.12-slim-bookworm
-
-# Minimal environment
-ENV LANG=C.UTF-8
-ENV PYTHONUNBUFFERED=1
-ENV UV_PROJECT_ENVIRONMENT=/.venv
-ENV UV_LINK_MODE=copy
-ENV PATH="/.venv/bin:${PATH}"
-
-# Create app user
-RUN useradd -ms /bin/bash app -d /home/app -u 1000 && \
+    pip install uv && \
+    useradd -ms /bin/bash app -d /home/app -u 1000 && \
     mkdir -p /app && \
     chown app:app /app && \
     mkdir -p /.venv && \
     chown app:app /.venv
 
+# Switch to the new user
 USER app
 WORKDIR /app
 
-# Copy virtualenv + app from builder
-COPY --from=builder /.venv /.venv
-COPY --from=builder /app/api ./api
-COPY --from=builder /app/tests ./tests
-COPY --from=builder /app/pytest.ini ./
-COPY --from=builder /app/docker-entrypoint.sh ./
+# Copy dependency files first for better layer caching
+COPY --chown=app:app pyproject.toml uv.lock* ./
+
+# Install dependencies in a separate layer for better caching
+RUN uv sync --frozen
+
+# Add virtualenv's bin directory to PATH
+ENV PATH="/.venv/bin:${PATH}"
+
+# Copy source code
+COPY --chown=app:app api/ ./api/
+
+# Copy tests and scripts
+COPY --chown=app:app tests/ ./tests/
+COPY --chown=app:app pytest.ini ./
+COPY --chown=app:app docker-entrypoint.sh ./
 
 # Make entrypoint executable
 USER root
