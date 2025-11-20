@@ -31,7 +31,7 @@ def post_input_eval_image(payload: Dict[str, Any], timeout: float = 20.0) -> Dic
 
 def post_vl_model(req: VLPredictRequest, timeout: float = 10.0) -> VLPredictResponse:
     """Call the VL model endpoint. Accepts a VLPredictRequest and returns a VLPredictResponse."""
-    url = f"{settings.VL_MODEL_URL}/predict"
+    url = f"{settings.VL_MODEL_URL}/vlmodel/predict"
     with httpx.Client(timeout=timeout) as c:
         r = c.post(url, json=req.model_dump())
     if r.status_code >= 400:
