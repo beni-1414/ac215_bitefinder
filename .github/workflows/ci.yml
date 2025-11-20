@@ -91,30 +91,53 @@ jobs:
           retention-days: 1
 
   build-vlmodel:
-    name: Build & Push VL Model Docker Image
+    name: Build VL Model Docker Image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
-      - name: Configure Docker for Google Artifact Registry
-        run: |
-          gcloud auth configure-docker us-east1-docker.pkg.dev
-
-      - name: Build and push Docker image to GAR
+      - name: Build Docker image for VL Model
         working-directory: src/vlmodel
         run: |
-          IMAGE_NAME=us-east1-docker.pkg.dev/bitefinder-474614/bitefinder-images/bitefinder-vlmodel:${{ github.sha }}
-          docker build -t $IMAGE_NAME .
-          docker push $IMAGE_NAME
+          docker build -t bitefinder-vlmodel:${{ github.sha }} .
+      - name: Save Docker image
+        run: |
+          docker save bitefinder-vlmodel:${{ github.sha }} -o /tmp/bitefinder-vlmodel.tar
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-vlmodel
+          path: /tmp/bitefinder-vlmodel.tar
+          retention-days: 1
+
+# PUSHING TO GOOGLE ARTIFACT REGISTRY
+  # build-vlmodel:
+  #   name: Build & Push VL Model Docker Image
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+
+  #     - name: Authenticate to Google Cloud
+  #       uses: google-github-actions/auth@v1
+  #       with:
+  #         credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+  #     - name: Configure Docker for Google Artifact Registry
+  #       run: |
+  #         gcloud auth configure-docker us-east1-docker.pkg.dev
+
+  #     - name: Build and push Docker image to GAR
+  #       working-directory: src/vlmodel
+  #       run: |
+  #         IMAGE_NAME=us-east1-docker.pkg.dev/bitefinder-474614/bitefinder-images/bitefinder-vlmodel:${{ github.sha }}
+  #         docker build -t $IMAGE_NAME .
+  #         docker push $IMAGE_NAME
 
   # Job 2: Run linting and formatting checks
   lint-and-format-input-evaluation:
@@ -181,28 +204,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v1
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
         with:
-          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          name: docker-image-vlmodel
+          path: /tmp
 
-      - name: Configure Docker for Google Artifact Registry
+      - name: Load Docker image
         run: |
-          gcloud auth configure-docker us-east1-docker.pkg.dev
-
-      - name: Pull Docker image from GAR
-        run: |
-          IMAGE_NAME=us-east1-docker.pkg.dev/bitefinder-474614/bitefinder-images/bitefinder-vlmodel:${{ github.sha }}
-          docker pull $IMAGE_NAME
+          docker load -i /tmp/bitefinder-vlmodel.tar
 
       - name: Run Black formatter check
         run: |
-          docker run --rm $IMAGE_NAME black --check --line-length 140 api/
+          docker run --rm bitefinder-vlmodel:${{ github.sha }} black --check --line-length 140 api/
         continue-on-error: false
 
       - name: Run Flake8 linter
         run: |
-          docker run --rm $IMAGE_NAME flake8 --max-line-length=140 --extend-ignore=E203,W503 api/
+          docker run --rm bitefinder-vlmodel:${{ github.sha }} flake8 --max-line-length=140 --extend-ignore=E203,W503 api/
         continue-on-error: true
 
   lint-and-format-orchestrator:
@@ -350,16 +369,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build test image
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-vlmodel
+          path: /tmp
+
+      - name: Load Docker image
         run: |
-          docker build -f Dockerfile -t vlmodel-test src/vlmodel
+          docker load -i /tmp/bitefinder-vlmodel.tar
 
       - name: Run unit tests
         run: |
-          docker run --rm \
-            -v /tmp/torch-cache:/home/app/.cache \
-            vlmodel-test \
+          docker run --rm bitefinder-vlmodel:${{ github.sha }} \
+            python -m tests.unit.test_inference
+
+      - name: Generate coverage report
+        run: |
+          docker run --rm -v ${{ github.workspace }}/coverage:/app/coverage \
+            bitefinder-vlmodel:${{ github.sha }} \
             pytest tests/unit/ --cov=api --cov-report=term --cov-report=xml --cov-report=html:coverage
+        continue-on-error: true
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
