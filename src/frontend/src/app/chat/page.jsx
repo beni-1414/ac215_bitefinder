@@ -14,7 +14,7 @@ export default function ChatPage() {
   const [lastUserMessage, setLastUserMessage] = useState("");
   const evalResRef = React.useRef(null);
   const [history, setHistory] = useState([]);
-
+  const [hasPrediction, setHasPrediction] = useState(false);
 
   const allOptions = [
     "Relief & treatment",
@@ -25,6 +25,18 @@ export default function ChatPage() {
   const addMessage = (role, text, image = null) => {
     setMessages((prev) => [...prev, { role, text, image }]);
   };
+
+  // Advice string extraction helper (use everywhere you add RAG assistant messages)
+  function extractAdvice(llm) {
+    if (!llm) return "No advice was returned.";
+    if (typeof llm === "string") return llm;
+    if (Array.isArray(llm.treatment_for_mosquito_bites)) return llm.treatment_for_mosquito_bites.join('\n\n');
+    if (llm.treatment_for_mosquito_bites) return llm.treatment_for_mosquito_bites;
+    if (Array.isArray(llm.treatment_advice)) return llm.treatment_advice.join('\n\n');
+    if (llm.treatment_advice) return llm.treatment_advice;
+    if (llm.answer) return llm.answer;
+    return "No advice was returned.";
+  }
 
   // -------------------------------
   // FOLLOW-UP QUESTION HANDLER
@@ -46,11 +58,7 @@ export default function ChatPage() {
         conf: evalResRef.current.confidence || 0.0,
       });
 
-      const answer =
-        ragRes.llm?.answer ||
-        ragRes.llm ||
-        "I couldn't get advice for this bite. Try again later.";
-
+      const answer = extractAdvice(ragRes.llm);
       addMessage("assistant", answer);
 
       if (nextOptions.length > 0) {
@@ -65,36 +73,77 @@ export default function ChatPage() {
     }
   };
 
-  // -------------------------------
+  // ----------------------
   // MAIN SEND HANDLER
-  // -------------------------------
+  // ----------------------
   const handleSend = async ({ message, image }) => {
     setLoading(true);
-
-    setLastUserMessage(message || "");
-
     const imageURL = image ? URL.createObjectURL(image) : null;
     addMessage("user", message || "[uploaded image]", imageURL);
 
+    if (hasPrediction) {
+      try {
+        const relevanceCheck = await evaluateBite({
+          user_text: message,
+          image_gcs_uri: null,
+          first_call: false,
+          history: [],
+        });
+
+        if (relevanceCheck.eval?.courtesy) {
+          addMessage("assistant", "You're welcome. Let me know if you have other questions about the bite.");
+          setLoading(false);
+          return;
+        }
+
+        if (!relevanceCheck.eval?.question_relevant) {
+          const errorMsg = relevanceCheck.eval?.improve_message || "I can only answer questions about insect bites, symptoms, prevention, or treatment.";
+          addMessage("assistant", errorMsg);
+          setLoading(false);
+          return;
+        }
+
+        // QUESTION IS RELEVANT → CALL RAG
+        const ragRes = await askRag({
+          question: message,
+          symptoms: lastUserMessage,
+          bug_class: evalResRef.current?.prediction || "unknown",
+          conf: evalResRef.current?.confidence || 0.0,
+        });
+
+        const answer = extractAdvice(ragRes.llm);
+        addMessage("assistant", answer);
+
+      } catch (err) {
+        console.error(err);
+        addMessage("assistant", "Something went wrong while contacting the server.");
+      } finally {
+        setLoading(false);
+      }
+      return; // DO NOT CALL /evaluate ANYMORE
+    }
+
+    // FIRST MESSAGE → CALL /evaluate
+    if (!hasPrediction) {
+      setLastUserMessage(message || "");
+    }
+
     setHistory((prev) => [...prev, message]);
 
-    // ---- CALL /evaluate ----
     try {
       const evalResult = await evaluateBite({
         user_text: message,
         image_gcs_uri: null,
-        first_call: history.length === 0,
+        first_call: true,
         history: history,
       });
 
-      // CASE 1: Validation fails
       if (evalResult.needs_fix) {
         addMessage("assistant", evalResult.error || "Please provide more details.");
         setLoading(false);
         return;
       }
 
-      // CASE 2: Validation passes
       const passed = evalResult.eval;
       evalResRef.current = passed;
 
@@ -103,27 +152,20 @@ export default function ChatPage() {
 
       addMessage(
         "assistant",
-        `According to our AI engine, this appears to be a ${pred} bite (confidence: ${conf.toFixed(
-          2
-        )}).`
+        `According to our AI engine, this appears to be a ${pred} bite (confidence: ${conf.toFixed(2)}).`
       );
 
       setRemainingOptions(allOptions);
       setShowSuggestions(true);
+      setHasPrediction(true);
     } catch (err) {
       console.error(err);
-      addMessage(
-        "assistant",
-        "Oops, something went wrong while contacting the server."
-      );
+      addMessage("assistant", "Oops, something went wrong while contacting the server.");
     } finally {
       setLoading(false);
     }
   };
 
-  // -------------------------------
-  // RENDER
-  // -------------------------------
   return (
     <div className="flex justify-center items-center min-h-screen bg-background px-4">
       <Card className="w-full max-w-2xl shadow-md border">
@@ -132,23 +174,20 @@ export default function ChatPage() {
           <p className="text-sm text-muted-foreground text-center">
             Upload a photo and describe what happened.
             <br />
-            I’ll help figure out what might have caused the bite and how to treat it.
+            I'll help figure out what might have caused the bite and how to treat it.
           </p>
         </CardHeader>
-
         <CardContent className="flex flex-col justify-between h-[70vh]">
           <div className="flex-1 overflow-y-auto mb-4">
             {messages.map((m, i) => (
               <ChatMessage key={i} role={m.role} text={m.text} image={m.image} />
             ))}
-
             {loading && (
               <ChatMessage
                 role="assistant"
                 text="Analyzing your input, please wait..."
               />
             )}
-
             {showSuggestions && (
               <QuestionSuggestions
                 options={remainingOptions}
@@ -156,7 +195,6 @@ export default function ChatPage() {
               />
             )}
           </div>
-
           <ChatInput
             onSend={handleSend}
             placeholderText={

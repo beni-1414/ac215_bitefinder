@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 from api.schemas import RAGRequest
 from api.services.clients import post_rag_chat, ServiceError
 from api.services.vertex_llm import get_llm
+import inspect
 
 router = APIRouter(prefix="/v1/orchestrator", tags=["rag"])
 
@@ -40,7 +41,11 @@ def orchestrator_rag(req: RAGRequest) -> Dict[str, Any]:
 
     try:
         llm = get_llm()
+        print("VertexLLM dir:", dir(llm))
+        print("rag file - VertexLLM loaded from:", inspect.getfile(llm.__class__))
+
         llm_resp = llm.evaluate_text({"prompt": prompt})
+
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Vertex LLM error: {str(e)}")
 

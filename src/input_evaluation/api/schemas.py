@@ -17,6 +17,8 @@ class TextEvalResponse(BaseModel):
     improve_message: Optional[str] = None
     combined_text: Optional[str] = None
     high_danger: bool = False
+    question_relevant: bool = True  # NEW
+    courtesy: bool = False  # NEW
     latency_ms: int
 
 
