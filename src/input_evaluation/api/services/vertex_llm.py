@@ -21,7 +21,6 @@ class VertexLLM:
         Returns whatever JSON the model outputs.
         """
         prompt = payload["prompt"]
-
         resp = self.client.models.generate_content(
             model=settings.VERTEX_MODEL_NAME,
             contents=prompt,
@@ -30,33 +29,17 @@ class VertexLLM:
                 "response_mime_type": "application/json",
             },
         )
-
         text = resp.text or "{}"
-
-        print("===== RAW LLM RESPONSE =====")
-        print(f"Response text: {text}")
-        print("===========================")
-
         try:
-            # Remove markdown code blocks if present
-            if text.startswith("```json"):
-                text = text.split("```json")[1].split("```")[0].strip()
-            elif text.startswith("```"):
-                text = text.split("```")[1].split("```")[0].strip()
-
             data = json.loads(text)
-            print(f"Parsed data: {data}")
-            return data  # Return ALL fields from the LLM
-
-        except json.JSONDecodeError as e:
-            print(f"ERROR: Failed to parse JSON: {text}")
-            print(f"Error: {e}")
-            # Return minimal fallback
-            return {
+        except json.JSONDecodeError:
+            # Fallback minimal structure
+            data = {
                 "complete": False,
                 "improve_message": "Error processing request.",
                 "combined_text": None,
             }
+        return data  # <-- This closes the function
 
 
 vertex_llm_singleton: VertexLLM | None = None

@@ -44,7 +44,6 @@ class VertexLLM:
                 text = text.split("```json")[1].split("```")[0].strip()
             elif text.startswith("```"):
                 text = text.split("```")[1].split("```")[0].strip()
-
             result = json.loads(text)
             print(f"Parsed result: {result}")
             return result
