@@ -17,6 +17,8 @@ class TextEvalResponse(BaseModel):
     improve_message: Optional[str] = None
     combined_text: Optional[str] = None
     high_danger: bool = False
+    question_relevant: bool = True  # NEW
+    courtesy: bool = False  # NEW
     latency_ms: int
 
 
@@ -65,11 +67,11 @@ class RAGRequest(BaseModel):
     bug_class: Optional[str] = None
 
 
-class RAGResponse(BaseModel):
-    question: Optional[str] = None
-    prompt: Optional[str] = None
-    context: Optional[str] = None
-    bug_class: Optional[str] = None
+# class RAGResponse(BaseModel):
+#     question: Optional[str] = None
+#     prompt: Optional[str] = None
+#     context: Optional[str] = None
+#     bug_class: Optional[str] = None
 
 
 class RAGModelPayload(BaseModel):
@@ -99,14 +101,13 @@ class OrchestratorEvaluateRequest(BaseModel):
 
 class OrchestratorEvaluateResponse(BaseModel):
     ok: bool
-    # Prediction returned when a VL model runs
+    # For initial calls (prediction)
     prediction: Optional[str] = None
     confidence: Optional[float] = None
     message: Optional[str] = None
-    # Raw results from the input evaluators (image/text), may include 'error' or evaluator outputs
     results: Optional[dict] = None
-    # If validation failed and overwrite_validation was false, these fields explain issues
     image_issue: Optional[str] = None
     text_issue: Optional[str] = None
-    # Generic error detail (downstream service failure)
     error: Optional[str] = None
+    # For followup calls (evaluation)
+    eval: Optional[dict] = None

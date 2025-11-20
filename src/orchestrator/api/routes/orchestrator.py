@@ -18,18 +18,10 @@ router = APIRouter(prefix="/v1/orchestrator", tags=["orchestrator"])
 
 @router.post("/evaluate", response_model=OrchestratorEvaluateResponse)
 def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
-    """Orchestrate a frontend evaluation request.
-
-    Expected body keys:
-      - image_gcs_uri: optional
-      - user_text: optional
-      - overwrite_validation: bool (if true, run vl model even if eval failed)
-    """
+    """Orchestrate a frontend evaluation request."""
     image_uri = req.image_gcs_uri
     user_text = req.user_text
     overwrite = bool(req.overwrite_validation)
-    # TEMPORARY OVERRIDE — ALWAYS BYPASS VALIDATION
-    # overwrite = True
     results: Dict[str, Any] = {"image": None, "text": None}
 
     # Call image evaluator if present
@@ -37,7 +29,6 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
         if image_uri:
             results["image"] = post_input_eval_image({"image_gcs_uri": image_uri})
     except ServiceError as e:
-        # treat as a failed validation
         results["image"] = {"error": str(e)}
     print("EVAL RESULTS:", results)
 
@@ -55,6 +46,33 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
     except ServiceError as e:
         results["text"] = {"error": str(e)}
     print("EVAL RESULTS:", results)
+
+    # =========================================
+    # FOR FOLLOWUP QUESTIONS: RETURN EVAL ONLY
+    # =========================================
+    if not req.first_call:
+        textblock = results.get("text")
+        print("FOLLOWUP RAW textblock:", textblock)
+
+        # Flatten deeply
+        while isinstance(textblock, dict) and "eval" in textblock and isinstance(textblock["eval"], dict):
+            textblock = textblock["eval"]
+
+        response = {
+            "ok": True,
+            "eval": {
+                "question_relevant": textblock.get("question_relevant", False),
+                "improve_message": textblock.get("improve_message"),
+                "courtesy": textblock.get("courtesy", False),
+                "complete": textblock.get("complete", True),
+            },
+        }
+        print("FOLLOWUP RESPONSE TO FRONTEND:", response)
+        return response
+
+    # =========================================
+    # FOR INITIAL MESSAGES: CONTINUE WITH PREDICTION
+    # =========================================
 
     # Decide whether to return a request for new input
     image_fail = False
@@ -84,18 +102,8 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
         }
         return detail
 
-    # If overwriting or all good, call VL model if available
-    # try:
-    #     vl_req = VLPredictRequest(text_raw=user_text, image_gcs=image_uri)
-    #     vl_resp = post_vl_model(vl_req)
-    # except ServiceError:
-    #     raise HTTPException(status_code=502, detail="vl-model unavailable")
-
-    # pred = vl_resp.prediction
-    # conf = vl_resp.confidence
-
     # temporarily skip VLM call while the model service is offline
-    pred = "tick"
+    pred = "mosquito"
     conf = 0.85
     print("⚠️  VLM model skipped — returning stub prediction.")
 
