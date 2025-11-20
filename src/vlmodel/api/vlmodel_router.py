@@ -29,16 +29,27 @@ def load_model():
     if wandb_key:
         os.environ['WANDB_API_KEY'] = wandb_key
 
-    # Download artifact from W&B
     api = wandb.Api()
+
     wandb_team = os.environ['WANDB_TEAM']
     wandb_project = os.environ['WANDB_PROJECT']
     artifact_root = wandb_team + '/' + wandb_project + '/'
-    artifact_name = artifact_root + 'labels_v2_20251101_182957:v0'  # TODO: make dynamic
-    artifact = api.artifact(artifact_name)
-    artifact_dir = artifact.download()
+    artifact_model_label = 'labels_v2_20251101_182957'  # TODO: make dynamic
+    artifact_model_version = 'latest'
+    artifact_name = artifact_root + artifact_model_label + ':' + artifact_model_version
+
+    # Retrieve cache directory for model weights (or make if first time)
+    cache_dir = os.getenv('MODEL_CACHE_DIR', '/tmp/vlmodel_cache')
+    os.makedirs(cache_dir, exist_ok=True)
+
+    # Download artifact from W&B into persistent cache if not already cached
+    artifact_dir = os.path.join(cache_dir, artifact_name.replace('/', '_').replace(':', '_'))
+    if not os.path.exists(artifact_dir):
+        artifact = api.artifact(artifact_name)
+        artifact.download(root=artifact_dir)
 
     # Pull artifact metadata
+    artifact = api.artifact(artifact_name)
     metadata = dict(artifact.metadata)
     model_id = metadata['model_id']
     num_labels = metadata['num_labels']
@@ -50,6 +61,8 @@ def load_model():
     model.model = model.model.from_pretrained(artifact_dir)
     model.processor = model.processor.from_pretrained(artifact_dir)
     model.classifier.load_state_dict(torch.load(f'{artifact_dir}/classifier.pt', map_location=torch.device(device)))
+
+    # Set model to eval mode
     model.eval()
 
 

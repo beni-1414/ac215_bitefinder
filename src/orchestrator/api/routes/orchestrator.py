@@ -6,11 +6,13 @@ from fastapi import APIRouter
 from api.services.clients import (
     post_input_eval_image,
     post_input_eval_text,
+    post_vl_model,
     ServiceError,
 )
 from api.schemas import (
     OrchestratorEvaluateRequest,
     OrchestratorEvaluateResponse,
+    VLPredictRequest,
 )
 
 router = APIRouter(prefix="/v1/orchestrator", tags=["orchestrator"])
@@ -102,10 +104,24 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
         }
         return detail
 
-    # temporarily skip VLM call while the model service is offline
-    pred = "mosquito"
-    conf = 0.85
-    print("⚠️  VLM model skipped — returning stub prediction.")
+    # Call VL model and return prediction
+    vl_model_req = VLPredictRequest(
+        image_gcs=image_uri,
+        text_raw=user_text,
+    )
+    try:
+        vl_model_res = post_vl_model(vl_model_req.dict())
+    except ServiceError as e:
+        return {
+            "ok": False,
+            "prediction": None,
+            "confidence": None,
+            "message": f"VL model prediction service error: {str(e)}",
+            "results": results,
+        }
+
+    pred = vl_model_res.prediction
+    conf = vl_model_res.confidence
 
     message = f"According to our AI engine, you have been bitten by {pred} with {conf} confidence. "
 

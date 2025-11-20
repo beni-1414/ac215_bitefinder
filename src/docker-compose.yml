@@ -47,5 +47,15 @@ services:
       - "8004:9000"
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: "/secrets/bitefinder-service-account.json"
+      SECRET_MANAGER_PROJECT: "bitefinder-474614"
+      GCP_BUCKET_NAME: "bitefinder-data"
+      WANDB_TEAM: "bitefinder"
+      WANDB_PROJECT: "bitefinder-vl"
+      MODEL_CACHE_DIR: "/app/vlmodel_cache"
     volumes:
       - ../../secrets:/secrets:ro
+      - ./vlmodel_cache:/app/vlmodel_cache # Persist cache across restarts
+      # - vlmodel_cache:/app/vlmodel_cache
+
+# volumes:
+#   vlmodel_cache:
