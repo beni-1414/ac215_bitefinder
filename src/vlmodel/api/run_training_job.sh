@@ -10,23 +10,14 @@ echo "🚀 Submitting Vertex AI training job..."
 source ../../../env.dev
 
 export RUN_ID=run_$(date +%Y%m%d_%H%M%S)
-export REPLICA_COUNT=1
 
 # Authenticate with Google Cloud, comment this line if running inside GCP VM
 gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
 
-# Set up W&B sweep if sweep config file is provided
+# Initialize sweep configuration if provided
 SWEEP_CONFIG=$1
 if [ -n "$SWEEP_CONFIG" ]; then
-    echo "🌀 Creating W&B sweep from sweep.yaml..."
-    SWEEP_ID=$(wandb sweep --project "$WANDB_PROJECT" --entity "$WANDB_TEAM" "$SWEEP_CONFIG" 2>&1 | awk '/Created sweep with ID:/ {print $NF}')
-    if [ -z "$SWEEP_ID" ]; then
-        echo "Error: Could not extract sweep ID"
-        exit 1
-    fi
-    export SWEEP_ID
-    export REPLICA_COUNT=4 # Number of parallel workers
-    echo "✅ Sweep created: $SWEEP_ID"
+    export SWEEP_CONFIG=$SWEEP_CONFIG
 fi
 
 # Produce a resolved config with actual values baked in

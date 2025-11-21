@@ -26,7 +26,7 @@ def main():
     parser.add_argument('--data_root_dir', type=str, default='data/')
     parser.add_argument('--run_id', type=str, default='default_run')
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--sweep_id', type=str, default=None)
+    parser.add_argument('--sweep_config', type=str, default=None)
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-s', '--save', action='store_true')
     training_args = parser.parse_args()
@@ -37,8 +37,9 @@ def main():
         os.environ['WANDB_API_KEY'] = wandb_key
     wandb.login()
 
-    sweep_id = training_args.sweep_id
-    if sweep_id:
+    sweep_config = training_args.sweep_config
+    if sweep_config:
+        sweep_id = wandb.sweep(sweep_config, project=os.environ['WANDB_PROJECT'], entity=os.environ['WANDB_TEAM'])
         print(f'🚀 Starting W&B sweep agent: {sweep_id}')
         wandb.agent(sweep_id, function=run_training)
         print('✅ Sweep job complete!')
