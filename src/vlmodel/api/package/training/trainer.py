@@ -6,7 +6,6 @@ from torch import nn
 from tqdm import tqdm
 import wandb
 from training.utils_dataloader import collate_paired_fn, train_eval_split
-from training.utils_gcp import get_secret
 
 '''
 Trainer: experiment handler for model training and evaluation with integrated W&B logging
@@ -73,16 +72,6 @@ class Trainer:
         self.optimizer = optimizer_class(filter(lambda param: param.requires_grad, model.parameters()), **self.optimizer_kwargs)
         self.num_epochs = num_epochs
 
-        # Log into W&B
-        wandb_key = get_secret('WANDB_API_KEY')
-        if wandb_key:
-            os.environ['WANDB_API_KEY'] = wandb_key
-        wandb.login()
-
-        # Load W&B entity and project from env vars
-        self.wandb_team = os.environ['WANDB_TEAM']
-        self.wandb_project = os.environ['WANDB_PROJECT']
-
     '''
     train_eval: model training and validation loop
     '''
@@ -90,8 +79,8 @@ class Trainer:
     def train_eval(self):
         # Initialize a W&B run
         wandb_run = wandb.init(
-            entity=self.wandb_team,  # Set the team where your project will be logged
-            project=self.wandb_project,  # Set the project where this run will be logged
+            entity=os.environ['WANDB_TEAM'],  # Set the team where your project will be logged
+            project=os.environ['WANDB_PROJECT'],  # Set the project where this run will be logged
             settings=wandb.Settings(silent=True),  # Turns off all wandb log statements
             name=self.run_id,
             config={

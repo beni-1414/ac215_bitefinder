@@ -47,7 +47,7 @@ services:
       - "8004:9000"
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: "/secrets/bitefinder-service-account.json"
-      SECRET_MANAGER_PROJECT: "bitefinder-474614"
+      GCP_PROJECT: "bitefinder-irith"
       GCP_BUCKET_NAME: "bitefinder-data"
       WANDB_TEAM: "bitefinder"
       WANDB_PROJECT: "bitefinder-vl"
@@ -56,6 +56,24 @@ services:
       - ../../secrets:/secrets:ro
       - ./vlmodel_cache:/app/vlmodel_cache # UNCOMMENT FOR DEVELOPMENT
       # - vlmodel_cache:/app/vlmodel_cache # UNCOMMENT FOR DEPLOYMENT
+
+  frontend:
+    image: src-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: frontend
+    ports:
+      - "3001:3000"  # host:container, expose frontend on localhost:3001
+    environment:
+      - NEXT_PUBLIC_BASE_API_URL=http://orchestrator:9000
+      - CHOKIDAR_USEPOLLING=true
+      - PORT=3000
+    volumes:
+      - ./frontend:/app
+    command: -c "npm install && npm run dev"
+    depends_on:
+      - orchestrator
 
 # UNCOMMENT FOR DEPLOYMENT
 # volumes:

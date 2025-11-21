@@ -7,11 +7,27 @@ set -e
 echo "🚀 Submitting Vertex AI training job..."
 
 # Source environment variables
-source ../../env.dev
-export RUN_ID=labels_v2_$(date +%Y%m%d_%H%M%S)
+source ../../../env.dev
+
+export RUN_ID=run_$(date +%Y%m%d_%H%M%S)
+export REPLICA_COUNT=1
 
 # Authenticate with Google Cloud, comment this line if running inside GCP VM
 gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+
+# Set up W&B sweep if sweep config file is provided
+SWEEP_CONFIG=$1
+if [ -n "$SWEEP_CONFIG" ]; then
+    echo "🌀 Creating W&B sweep from sweep.yaml..."
+    SWEEP_ID=$(wandb sweep --project "$WANDB_PROJECT" --entity "$WANDB_TEAM" "$SWEEP_CONFIG" 2>&1 | awk '/Created sweep with ID:/ {print $NF}')
+    if [ -z "$SWEEP_ID" ]; then
+        echo "Error: Could not extract sweep ID"
+        exit 1
+    fi
+    export SWEEP_ID
+    export REPLICA_COUNT=4 # Number of parallel workers
+    echo "✅ Sweep created: $SWEEP_ID"
+fi
 
 # Produce a resolved config with actual values baked in
 envsubst < job_config.yaml > job_config_resolved.yaml
@@ -31,7 +47,5 @@ echo "📊 Monitor your job:"
 echo "   Console: https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=${GCP_PROJECT}"
 echo "   W&B: https://wandb.ai/bitefinder/bitefinder-vl"
 echo ""
-echo "🔍 To get job details:"
-echo "   gcloud ai custom-jobs describe <JOB_ID> --region=${GCP_REGION} --project=${GCP_PROJECT}"
 
 rm -f job_config_resolved.yaml

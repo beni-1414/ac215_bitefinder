@@ -34,7 +34,7 @@ def load_model():
     wandb_team = os.environ['WANDB_TEAM']
     wandb_project = os.environ['WANDB_PROJECT']
     artifact_root = wandb_team + '/' + wandb_project + '/'
-    artifact_model_label = 'labels_v2_20251101_182957'  # TODO: make dynamic
+    artifact_model_label = 'run_20251121_132516'  # TODO: make dynamic
     artifact_model_version = 'latest'
     artifact_name = artifact_root + artifact_model_label + ':' + artifact_model_version
 
