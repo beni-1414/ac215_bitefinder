@@ -157,9 +157,16 @@ class Trainer:
 
         # Save trained model as W&B artifact
         if self.save:
+            model_kwargs = {  # Model instansiation arguments
+                'num_labels': self.dataset.num_labels,
+                'unfreeze_layers': self.model.unfreeze_layers,
+                'classifier_layers': self.model.classifier_layers,
+                'dropout_prob': self.model.dropout_prob,
+                'activation': self.model.activation,
+            }
             artifact_metadata = {  # Store necessary metadata for future model inference
                 'model_id': self.model_id,
-                'num_labels': self.dataset.num_labels,
+                'model_kwargs': model_kwargs,
                 'id_to_label': self.dataset.id_to_label,
             }
             artifact = wandb.Artifact(

@@ -33,8 +33,8 @@ def load_model():
     api = wandb.Api()
 
     artifact_root = os.environ['WANDB_TEAM'] + '/' + os.environ['WANDB_PROJECT'] + '/'
-    artifact_model_label = 'vilt_20251123_073450'  # TODO: make dynamic
-    artifact_model_version = 'latest'
+    artifact_model_label = 'clip_20251123_142638'  # TODO: make dynamic
+    artifact_model_version = 'v0'
     artifact_name = artifact_root + artifact_model_label + ':' + artifact_model_version
 
     # Retrieve cache directory for model weights (or make if first time)
@@ -54,9 +54,13 @@ def load_model():
     num_labels = metadata['num_labels']
     id_to_label = {int(k): v for k, v in metadata['id_to_label'].items()}
 
+    # TODO: replace with:
+    # model_kwargs = metadata['model_kwargs']
+    # model = model_class(**model_kwargs)
+
     # Instansiate model from saved artifact
     model_class = model_classes[model_id]
-    model = model_class(num_labels=num_labels)
+    model = model_class(num_labels=num_labels, unfreeze_layers=4, classifier_layers=2)
     model.model = model.model.from_pretrained(artifact_dir)
     model.processor = model.processor.from_pretrained(artifact_dir)
     model.classifier.load_state_dict(torch.load(f'{artifact_dir}/classifier.pt', map_location=torch.device(device)))
