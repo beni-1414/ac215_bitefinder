@@ -10,7 +10,7 @@ import os
 import torch
 from google.cloud import storage
 from api.package.training.model import model_classes
-from api.package.training.utils_gcp import get_secret
+from api.package.training.utils_secret import get_secret
 
 router = APIRouter()
 
@@ -24,17 +24,16 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 def load_model():
     global model, id_to_label, device
 
-    # Set W&B API key from GCP Secret Manager
+    # Retrieve W&B API key from secret manager
     wandb_key = get_secret('WANDB_API_KEY')
     if wandb_key:
         os.environ['WANDB_API_KEY'] = wandb_key
 
+    # Initialize W&B API
     api = wandb.Api()
 
-    wandb_team = os.environ['WANDB_TEAM']
-    wandb_project = os.environ['WANDB_PROJECT']
-    artifact_root = wandb_team + '/' + wandb_project + '/'
-    artifact_model_label = 'run_20251121_132516'  # TODO: make dynamic
+    artifact_root = os.environ['WANDB_TEAM'] + '/' + os.environ['WANDB_PROJECT'] + '/'
+    artifact_model_label = 'vilt_20251123_073450'  # TODO: make dynamic
     artifact_model_version = 'latest'
     artifact_name = artifact_root + artifact_model_label + ':' + artifact_model_version
 

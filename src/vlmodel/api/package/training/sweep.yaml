@@ -1,0 +1,18 @@
+program: 'training.task'
+method: 'grid'
+metric:
+  name: 'eval_loss'
+  goal: 'minimize'
+parameters:
+  unfreeze_layers:
+    values: [1, 2, 3]
+  classifier_layers:
+    values: [1, 2]
+  dropout_prob:
+    values: [0.1]
+  activation:
+    values: ['relu', 'gelu']
+  optimizer:
+    values: ['adam']
+  lr:
+    values: [1e-4]
