@@ -4,7 +4,7 @@ import pkgutil
 import yaml
 import wandb
 from training.trainer import Trainer
-from training.model import model_classes, activations
+from training.model import model_classes, activation_funcs
 from training.trainer import optim_classes
 from training.dataset import BugBitePairedDataset
 from training.utils_wandb import wandb_login
@@ -18,7 +18,7 @@ def main():
     parser.add_argument('--model', type=str, choices=list(model_classes.keys()), default='clip')
     parser.add_argument('--unfreeze_layers', type=int, default=2)
     parser.add_argument('--classifier_layers', type=int, default=1)
-    parser.add_argument('--activation', type=str, choices=list(activations.keys()), default='relu')
+    parser.add_argument('--activation', type=str, choices=list(activation_funcs.keys()), default='relu')
     parser.add_argument('--dropout_prob', type=float, default=0.1)
     parser.add_argument('--epochs', type=int, default=5)
     parser.add_argument('--batch_size', type=int, default=64)

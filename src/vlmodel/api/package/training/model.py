@@ -42,7 +42,7 @@ class CLIPForBugBiteClassification(nn.Module):
             input_dim=vl_encoding_dim,
             output_dim=num_labels,
             dropout_prob=dropout_prob,
-            activation=activation,
+            activation_f=activation_funcs[activation],
         )
 
         # Unfreeze last N image + text encoder layers (and image + text projection layers)
@@ -106,7 +106,7 @@ class ViLTForBugBiteClassification(nn.Module):
             input_dim=vl_encoding_dim,
             output_dim=num_labels,
             dropout_prob=dropout_prob,
-            activation=activation,
+            activation_f=activation_funcs[activation],
         )
 
         # Unfreeze last N layers
@@ -142,14 +142,14 @@ def build_classifier(
     input_dim: int,
     output_dim: int,
     dropout_prob,
-    activation,
+    activation_f,
 ):
     layers = []
     hidden_dim = input_dim
     for _ in range(num_layers - 1):
         layers.append(nn.Dropout(dropout_prob))
         layers.append(nn.Linear(hidden_dim, hidden_dim // 2))
-        layers.append(activation)
+        layers.append(activation_f())
         hidden_dim = hidden_dim // 2
     layers.append(nn.Linear(hidden_dim, output_dim))
     return nn.Sequential(*layers)
@@ -164,9 +164,9 @@ model_classes = {
 }
 
 '''
-activations: map of activation name (in args and logs) to activation function
+activation_funcs: map of activation name (in args and logs) to activation function type
 '''
-activations = {
-    'relu': nn.ReLU(),
-    'gelu': nn.GELU(),
+activation_funcs = {
+    'relu': nn.ReLU,
+    'gelu': nn.GELU,
 }
