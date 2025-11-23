@@ -30,7 +30,12 @@ class CLIPForBugBiteClassification(nn.Module):
         activation='relu',
     ):
         super().__init__()
+        self.num_labels = num_labels
         self.pretrained = pretrained
+        self.unfreeze_layers = unfreeze_layers
+        self.classifier_layers = classifier_layers
+        self.dropout_prob = dropout_prob
+        self.activation = activation
         # Pre-trained CLIP model
         self.model = CLIPModel.from_pretrained(self.pretrained, use_safetensors=True, trust_remote_code=True)
         # Pre-trained CLIP processor
@@ -94,7 +99,12 @@ class ViLTForBugBiteClassification(nn.Module):
         self, num_labels, pretrained='dandelin/vilt-b32-mlm', unfreeze_layers=2, classifier_layers=1, dropout_prob=0.1, activation='relu'
     ):
         super().__init__()
+        self.num_labels = num_labels
         self.pretrained = pretrained
+        self.unfreeze_layers = unfreeze_layers
+        self.classifier_layers = classifier_layers
+        self.dropout_prob = dropout_prob
+        self.activation = activation
         # Pre-trained ViLT model
         self.model = ViltModel.from_pretrained(self.pretrained, use_safetensors=True, trust_remote_code=True)
         # Pre-trained ViLT processor
