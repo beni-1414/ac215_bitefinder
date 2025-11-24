@@ -30,13 +30,33 @@ export default function ChatPage() {
   function extractAdvice(llm) {
     if (!llm) return "No advice was returned.";
     if (typeof llm === "string") return llm;
+    if (Array.isArray(llm)) return llm.join('\n\n');
+
+    // Prefer dedicated fields
+    if (Array.isArray(llm.prevention_tips)) return llm.prevention_tips.join('\n\n');
+    if (llm.prevention_tips) return llm.prevention_tips;
     if (Array.isArray(llm.treatment_for_mosquito_bites)) return llm.treatment_for_mosquito_bites.join('\n\n');
     if (llm.treatment_for_mosquito_bites) return llm.treatment_for_mosquito_bites;
     if (Array.isArray(llm.treatment_advice)) return llm.treatment_advice.join('\n\n');
     if (llm.treatment_advice) return llm.treatment_advice;
     if (llm.answer) return llm.answer;
+
+    // Robustly extract info fields (recursively if needed)
+    if (typeof llm.insect === "object" && llm.insect !== null) {
+      // Join details from inner object
+      return Object.values(llm.insect)
+        .filter(v => typeof v === "string" && v.trim())
+        .join('\n\n');
+    }
+    // If llm is a flat object with info keys:
+    const infoStrings = Object.values(llm)
+      .filter(v => typeof v === "string" && v.trim())
+      .map(v => v.trim());
+    if (infoStrings.length) return infoStrings.join('\n\n');
+
     return "No advice was returned.";
   }
+
 
   // -------------------------------
   // FOLLOW-UP QUESTION HANDLER

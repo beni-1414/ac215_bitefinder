@@ -10,7 +10,7 @@ import os
 import torch
 from google.cloud import storage
 from api.package.training.model import model_classes
-from api.package.training.utils_gcp import get_secret
+from api.package.training.utils_secret import get_secret
 
 router = APIRouter()
 
@@ -24,18 +24,17 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 def load_model():
     global model, id_to_label, device
 
-    # Set W&B API key from GCP Secret Manager
+    # Retrieve W&B API key from secret manager
     wandb_key = get_secret('WANDB_API_KEY')
     if wandb_key:
         os.environ['WANDB_API_KEY'] = wandb_key
 
+    # Initialize W&B API
     api = wandb.Api()
 
-    wandb_team = os.environ['WANDB_TEAM']
-    wandb_project = os.environ['WANDB_PROJECT']
-    artifact_root = wandb_team + '/' + wandb_project + '/'
-    artifact_model_label = 'labels_v2_20251101_182957'  # TODO: make dynamic
-    artifact_model_version = 'latest'
+    artifact_root = os.environ['WANDB_TEAM'] + '/' + os.environ['WANDB_PROJECT'] + '/'
+    artifact_model_label = 'clip_20251123_191151'  # TODO: make dynamic
+    artifact_model_version = 'v0'
     artifact_name = artifact_root + artifact_model_label + ':' + artifact_model_version
 
     # Retrieve cache directory for model weights (or make if first time)
@@ -52,12 +51,12 @@ def load_model():
     artifact = api.artifact(artifact_name)
     metadata = dict(artifact.metadata)
     model_id = metadata['model_id']
-    num_labels = metadata['num_labels']
+    model_kwargs = metadata['model_kwargs']
     id_to_label = {int(k): v for k, v in metadata['id_to_label'].items()}
 
     # Instansiate model from saved artifact
     model_class = model_classes[model_id]
-    model = model_class(num_labels=num_labels)
+    model = model_class(**model_kwargs)
     model.model = model.model.from_pretrained(artifact_dir)
     model.processor = model.processor.from_pretrained(artifact_dir)
     model.classifier.load_state_dict(torch.load(f'{artifact_dir}/classifier.pt', map_location=torch.device(device)))
