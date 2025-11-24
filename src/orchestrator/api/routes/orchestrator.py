@@ -109,7 +109,7 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
 
     # Call VL model and return prediction
     vl_model_req = VLPredictRequest(
-        image_gcs='user-input/image.jpg',
+        image_gcs='user-input/image.jpg',  # TODO: THIS SHOULD NOT BE HARDCODED (IMAGE GCS URL IS CURRENTLY NONE)
         text_raw=user_text,
     )
     try:
