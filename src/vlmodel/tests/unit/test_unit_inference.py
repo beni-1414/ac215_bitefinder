@@ -151,7 +151,7 @@ def test_load_model(monkeypatch):
     # --- Mock wandb.Api ---
     fake_artifact = MagicMock()
     fake_artifact.download.return_value = "/fake/path"
-    fake_artifact.metadata = {"model_id": "dummy_model", "num_labels": 3, "id_to_label": {"0": "A", "1": "B", "2": "C"}}
+    fake_artifact.metadata = {"model_id": "dummy_model", "model_kwargs": {"num_labels": 3}, "id_to_label": {"0": "A", "1": "B", "2": "C"}}
     fake_api = MagicMock()
     fake_api.artifact.return_value = fake_artifact
     monkeypatch.setattr(vl.wandb, "Api", lambda: fake_api)
@@ -159,8 +159,8 @@ def test_load_model(monkeypatch):
     # --- Mock model_classes ---
     class DummyModel:
         def __init__(self, num_labels):
-            self.num_labels = num_labels
             self.model = MagicMock()
+            self.num_labels = num_labels
             self.processor = MagicMock()
             self.classifier = MagicMock()
 

@@ -3,7 +3,6 @@
 # Define some environment variables
 export SECRETS_DIR=../../../secrets/
 export GCP_PROJECT="bitefinder-irith" #Irith's project
-export SECRET_MANAGER_PROJECT="bitefinder-474614"
 export GCP_BUCKET_NAME="bitefinder-data"
 export GCS_BUCKET_URI="gs://bitefinder-data"
 export GCP_REGION="us-central1"

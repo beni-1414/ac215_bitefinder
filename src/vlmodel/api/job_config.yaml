@@ -12,23 +12,21 @@ workerPoolSpecs:
         - gs://bitefinder-data/vlmodel_training.tar.gz
       pythonModule: training.task
       args:
-        - --model=clip
-        - --epochs=20
-        - --batch_size=32
-        - --text_fname=texts_v2.json
-        - --lr=0.0001
-        - --run_id=${RUN_ID}
         - --save
+        - --text_fname=texts_v2.json
+        - --model=clip
+        - --unfreeze_layers=5
+        - --batch_size=64
+        - --lr=1e-3
+        - --classifier_layers=2
+        - --epochs=10
+        # - --sweep_config=sweep.yaml
       env:
         - name: GCS_BUCKET_URI
           value: ${GCS_BUCKET_URI}
-        - name: RUN_ID
-          value: ${RUN_ID}
         - name: WANDB_TEAM
           value: ${WANDB_TEAM}
         - name: WANDB_PROJECT
           value: ${WANDB_PROJECT}
         - name: GCP_PROJECT
           value: ${GCP_PROJECT}
-        - name: WANDB_API_KEY
-          value: ${WANDB_API_KEY}

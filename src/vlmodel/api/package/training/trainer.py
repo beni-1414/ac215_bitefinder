@@ -1,12 +1,10 @@
 from torch.utils.data import Dataset, DataLoader
 import torch
-import os
-import torch.optim as optim
 from torch import nn
+import torch.nn.functional as F
 from tqdm import tqdm
 import wandb
 from training.utils_dataloader import collate_paired_fn, train_eval_split
-from training.utils_gcp import get_secret
 
 '''
 Trainer: experiment handler for model training and evaluation with integrated W&B logging
@@ -14,12 +12,12 @@ Trainer: experiment handler for model training and evaluation with integrated W&
 - model: vision-language model with processor
 - num_epochs: number of training epochs
 - batch_size: batch size for data loader
-- optimizer_class: optimizer class
+- optimizer_id: optimizer class
 - lr: learning rate for optimizer
+- weight_decay: weight decay for optimizer
 - device: device to run training on (CPU/GPU)
 - seed: random seed for reproducibility
 - verbose: whether to print training/evaluation progress
-- run_id: label for the W&B run
 - save: whether to save the model as a W&B artifact
 '''
 
@@ -30,34 +28,33 @@ class Trainer:
         dataset: Dataset,
         model: nn.Module,
         model_id: str,
+        optimizer_id: str,
         num_epochs: int,
         batch_size: int,
-        optimizer_class=optim.Adam,
         lr=1e-4,
-        device='cpu',
+        weight_decay=0,
         seed=None,
         verbose=False,
-        run_id='default_run',
         save=False,
         save_dir=None,
     ):
         self.model = model
         self.model_id = model_id
         self.processor = model.processor
+        self.dataset = dataset
         self.seed = seed
-        self.device = device
         self.verbose = verbose
-        self.run_id = run_id
+        self.num_epochs = num_epochs
         self.save = save
         self.save_dir = save_dir
+
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.total_params = sum(p.numel() for p in self.model.parameters())  # Count parameters to log model complexity
         self.trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
 
-        self.dataset = dataset
-        train_dataset, eval_dataset = train_eval_split(
-            self.dataset, train_split=0.8, seed=self.seed
-        )  # Split dataset into training and validation sets
+        # Split dataset into training and validation sets
+        train_dataset, eval_dataset = train_eval_split(self.dataset, train_split=0.8, seed=self.seed)
 
         self.batch_size = batch_size
         self.dataloader_kwargs = {  # Define dataloader arguments
@@ -69,48 +66,16 @@ class Trainer:
         self.eval_dataloader = DataLoader(eval_dataset, **self.dataloader_kwargs)
 
         self.lr = lr
-        self.optimizer_kwargs = {'lr': self.lr}  # Define optimizer arguments
+        self.weight_decay = weight_decay
+        self.optimizer_kwargs = {'lr': self.lr, 'weight_decay': self.weight_decay}  # Define optimizer arguments
+        optimizer_class = optim_classes[optimizer_id]
         self.optimizer = optimizer_class(filter(lambda param: param.requires_grad, model.parameters()), **self.optimizer_kwargs)
-        self.num_epochs = num_epochs
-
-        # Log into W&B
-        wandb_key = get_secret('WANDB_API_KEY')
-        if wandb_key:
-            os.environ['WANDB_API_KEY'] = wandb_key
-        wandb.login()
-
-        # Load W&B entity and project from env vars
-        self.wandb_team = os.environ['WANDB_TEAM']
-        self.wandb_project = os.environ['WANDB_PROJECT']
 
     '''
     train_eval: model training and validation loop
     '''
 
     def train_eval(self):
-        # Initialize a W&B run
-        wandb_run = wandb.init(
-            entity=self.wandb_team,  # Set the team where your project will be logged
-            project=self.wandb_project,  # Set the project where this run will be logged
-            settings=wandb.Settings(silent=True),  # Turns off all wandb log statements
-            name=self.run_id,
-            config={
-                'model': self.model_id,
-                'pretrained': self.model.pretrained,
-                'total_params': self.total_params,
-                'trainable_params': self.trainable_params,
-                'dataset': self.dataset.dataset_id,
-                'text_data': self.dataset.text_fname,
-                'num_labels': self.dataset.num_labels,
-                'id_to_label': self.dataset.id_to_label,
-                'batch_size': self.batch_size,
-                'epochs': self.num_epochs,
-                'optimizer': self.optimizer.__class__.__name__,
-                'lr': self.lr,
-                'seed': self.seed,
-            },
-        )
-
         # Metrics
         train_loss = 0
         train_acc = 0
@@ -144,7 +109,7 @@ class Trainer:
             # Compute and log epoch metrics
             train_loss = train_total_loss / len(self.train_dataloader)
             train_acc = train_correct / train_total
-            wandb_run.log({'train_loss': train_loss, 'train_accuracy': train_acc})
+            wandb.log({'train_loss': train_loss, 'train_accuracy': train_acc})
             if self.verbose:
                 print(f'Epoch {epoch+1} | Loss: {train_loss:.4f} | Accuracy: {train_acc:.4f}')
 
@@ -154,6 +119,8 @@ class Trainer:
                 eval_total_loss = 0
                 eval_correct = 0
                 eval_total = 0
+                eval_logits = []
+                eval_labels = []
                 for batch in tqdm(self.eval_dataloader, desc='Evaluating', disable=not self.verbose):
                     # Move tensors to device
                     batch = {key: value.to(self.device) for key, value in batch.items()}
@@ -168,31 +135,57 @@ class Trainer:
                     y = batch['labels']
                     eval_correct += (y_pred == y).sum().item()
                     eval_total += y.size(0)
+                    eval_logits.append(logits.cpu())
+                    eval_labels.append(y.cpu())
                 # Compute and log eval metrics
                 eval_loss = eval_total_loss / len(self.eval_dataloader)
                 eval_acc = eval_correct / eval_total
-                wandb_run.log({'eval_loss': eval_loss, 'eval_accuracy': eval_acc})
+                wandb.log({'eval_loss': eval_loss, 'eval_accuracy': eval_acc})
                 if self.verbose:
                     print(f'Loss: {eval_loss:.4f} | Accuracy: {eval_acc:.4f}')
+                # Compute confidence metrics
+                logits_cat = torch.cat(eval_logits, dim=0)
+                labels_cat = torch.cat(eval_labels, dim=0)
+                probs = F.softmax(logits_cat, dim=1)
+                confidences, predictions = probs.max(dim=1)
+                correct = predictions.eq(labels_cat)
+                confidence_metrics = {
+                    'eval_avg_conf': confidences.mean().item(),
+                    'eval_avg_corr_conf': confidences[correct].mean().item() if correct.any() else 0,
+                }
+                wandb.log(confidence_metrics)
 
         # Save trained model as W&B artifact
         if self.save:
-            artifact_name = self.run_id
-            artifact_metadata = {
-                'model_id': self.model_id,
+            model_kwargs = {  # Model instansiation arguments
                 'num_labels': self.dataset.num_labels,
+                'unfreeze_layers': self.model.unfreeze_layers,
+                'classifier_layers': self.model.classifier_layers,
+                'dropout_prob': self.model.dropout_prob,
+                'activation': self.model.activation,
+            }
+            artifact_metadata = {  # Store necessary metadata for future model inference
+                'model_id': self.model_id,
+                'model_kwargs': model_kwargs,
                 'id_to_label': self.dataset.id_to_label,
             }
             artifact = wandb.Artifact(
-                name=artifact_name,
+                name=wandb.run.name,  # Use W&B run name to identify artifact
                 type='model',
                 metadata=artifact_metadata,
             )
-            self.model.model.save_pretrained(self.save_dir)
+            self.model.model.save_pretrained(self.save_dir)  # Save model and processor
             self.model.processor.save_pretrained(self.save_dir)
-            torch.save(self.model.classifier.state_dict(), self.save_dir + '/classifier.pt')
+            torch.save(self.model.classifier.state_dict(), self.save_dir + '/classifier.pt')  # Save classification head
             artifact.add_dir(self.save_dir)
-            wandb_run.log_artifact(artifact)
+            wandb.log_artifact(artifact)
 
-        # Finish the W&B run
-        wandb_run.finish()
+
+'''
+optim_classes: map of optimizer name (in args and logs) to optimizer class
+'''
+optim_classes = {
+    'sgd': torch.optim.SGD,
+    'adam': torch.optim.Adam,
+    'adamw': torch.optim.AdamW,
+}
