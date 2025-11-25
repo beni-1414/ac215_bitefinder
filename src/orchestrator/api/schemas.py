@@ -47,12 +47,19 @@ class ImageEvalResponse(BaseModel):
     source: str
 
 
-# VL model (vision+language) request/response
-class VLPredictRequest(BaseModel):
+# VL model request (image file in bucket)
+class VLPredictRequestGCS(BaseModel):
     text_raw: Optional[str] = None
     image_gcs: Optional[str] = None
 
 
+# VL model request (image encoded as string)
+class VLPredictRequestBase64(BaseModel):
+    text_raw: Optional[str] = None
+    image_base64: Optional[str] = None
+
+
+# VL model response (prediction)
 class VLPredictResponse(BaseModel):
     prediction: str
     confidence: float
@@ -91,6 +98,7 @@ class RAGModelWrapper(BaseModel):
 # Orchestrator evaluate request
 class OrchestratorEvaluateRequest(BaseModel):
     image_gcs_uri: Optional[str] = None
+    image_base64: Optional[str] = None
     user_text: Optional[str] = None
     overwrite_validation: bool = False
     first_call: bool = True

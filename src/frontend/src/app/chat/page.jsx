@@ -26,6 +26,25 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, { role, text, image }]);
   };
 
+
+  // Utility function to convert image file to base 64 string
+  function imageToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const result = reader.result;
+        const base64_str = result.split(",")[1];
+        resolve(base64_str);
+      };
+
+      reader.onerror = reject;
+
+      reader.readAsDataURL(file);
+    });
+  }
+
+
   // Advice string extraction helper (use everywhere you add RAG assistant messages)
   function extractAdvice(llm) {
     if (!llm) return "No advice was returned.";
@@ -101,11 +120,22 @@ export default function ChatPage() {
     const imageURL = image ? URL.createObjectURL(image) : null;
     addMessage("user", message || "[uploaded image]", imageURL);
 
+    // Convert image to base64
+    let image_base64 = null;
+    if (image) {
+      try {
+        image_base64 = await imageToBase64(image);
+      } catch (e) {
+        console.error("Error converting to base64:", e);
+      }
+    }
+
     if (hasPrediction) {
       try {
         const relevanceCheck = await evaluateBite({
           user_text: message,
           image_gcs_uri: null,
+          image_base64: image_base64,
           first_call: false,
           history: [],
         });
@@ -154,6 +184,7 @@ export default function ChatPage() {
       const evalResult = await evaluateBite({
         user_text: message,
         image_gcs_uri: null,
+        image_base64: image_base64,
         first_call: true,
         history: history,
       });

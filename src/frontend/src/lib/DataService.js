@@ -6,6 +6,7 @@ export async function evaluateBite(data) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       image_gcs_uri: data.image_gcs_uri || null,
+      image_base64: data.image_base64 || null,
       user_text: data.user_text || null,
       overwrite_validation: false, // <-- DO NOT OVERRIDE VALIDATION
       first_call: data.first_call,

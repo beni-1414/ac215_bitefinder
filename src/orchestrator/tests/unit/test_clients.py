@@ -6,7 +6,7 @@ import json
 import pytest
 
 import api.services.clients as clients
-from api.schemas import VLPredictRequest, RAGRequest
+from api.schemas import VLPredictRequestGCS, RAGRequest
 
 
 class DummyResponse:
@@ -41,7 +41,7 @@ def test_post_vl_model_success(monkeypatch):
     resp = DummyResponse(200, {"prediction": "mosquito", "confidence": 0.87})
     monkeypatch.setattr(clients, "httpx", SimpleNamespace(Client=lambda timeout=None: DummyClient(resp)))
 
-    req = VLPredictRequest(text_raw="hi")
+    req = VLPredictRequestGCS(text_raw="hi")
     out = clients.post_vl_model(req)
     assert out.prediction == "mosquito"
     assert out.confidence == 0.87
@@ -50,7 +50,7 @@ def test_post_vl_model_success(monkeypatch):
 def test_post_vl_model_failure(monkeypatch):
     resp = DummyResponse(500, {"error": "fail"})
     monkeypatch.setattr(clients, "httpx", SimpleNamespace(Client=lambda timeout=None: DummyClient(resp)))
-    req = VLPredictRequest()
+    req = VLPredictRequestGCS()
     with pytest.raises(clients.ServiceError):
         clients.post_vl_model(req)
 

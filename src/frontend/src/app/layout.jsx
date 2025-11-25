@@ -4,7 +4,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
 export const metadata = {
-    title: 'Your App Name',
+    title: 'BiteFinder',
     description: 'A minimal starter template for your next project',
 }
 

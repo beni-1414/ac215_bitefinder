@@ -33,7 +33,7 @@ export default function Header() {
                                 height={32}
                                 className="w-8 h-8"
                             />
-                            <h1 className="text-xl font-bold">Your App Name</h1>
+                            <h1 className="text-xl font-bold">BiteFinder</h1>
                         </Link>
 
                         <nav className="nav-desktop">

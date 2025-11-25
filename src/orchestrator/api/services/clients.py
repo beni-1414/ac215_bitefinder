@@ -4,7 +4,7 @@ from typing import Any, Dict
 import httpx
 
 from api.config import settings
-from api.schemas import VLPredictRequest, VLPredictResponse, RAGRequest, RAGModelWrapper
+from api.schemas import VLPredictRequestGCS, VLPredictRequestBase64, VLPredictResponse, RAGRequest, RAGModelWrapper
 
 
 class ServiceError(RuntimeError):
@@ -29,8 +29,8 @@ def post_input_eval_image(payload: Dict[str, Any], timeout: float = 20.0) -> Dic
     return r.json()
 
 
-def post_vl_model(req: VLPredictRequest, timeout: float = 10.0) -> VLPredictResponse:
-    """Call the VL model endpoint. Accepts a VLPredictRequest and returns a VLPredictResponse."""
+def post_vl_model(req: VLPredictRequestBase64 | VLPredictRequestGCS, timeout: float = 10.0) -> VLPredictResponse:
+    """Call the VL model endpoint. Accepts a VLPredictRequestGCS and returns a VLPredictResponse."""
     url = f"{settings.VL_MODEL_URL}/vlmodel/predict"
     with httpx.Client(timeout=timeout) as c:
         r = c.post(url, json=req.model_dump())

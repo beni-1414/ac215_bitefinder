@@ -6,7 +6,7 @@ export default function Footer() {
         <footer className="footer">
             <div className="container mx-auto px-4">
                 <p className="footer-text">
-                    Copyright © {new Date().getFullYear()} Your App Name. All Rights Reserved.
+                    Copyright © {new Date().getFullYear()} BiteFinder. All Rights Reserved.
                 </p>
             </div>
         </footer>

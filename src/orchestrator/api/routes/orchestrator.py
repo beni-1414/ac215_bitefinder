@@ -12,7 +12,8 @@ from api.services.clients import (
 from api.schemas import (
     OrchestratorEvaluateRequest,
     OrchestratorEvaluateResponse,
-    VLPredictRequest,
+    VLPredictRequestGCS,
+    VLPredictRequestBase64,
 )
 
 router = APIRouter(prefix="/v1/orchestrator", tags=["orchestrator"])
@@ -22,10 +23,8 @@ router = APIRouter(prefix="/v1/orchestrator", tags=["orchestrator"])
 def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
     """Orchestrate a frontend evaluation request."""
     image_uri = req.image_gcs_uri
+    image_base64 = req.image_base64
     user_text = req.user_text
-    print("TESTING")
-    print(image_uri)
-    print(user_text)
     overwrite = bool(req.overwrite_validation)
     results: Dict[str, Any] = {"image": None, "text": None}
 
@@ -108,10 +107,16 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
         return detail
 
     # Call VL model and return prediction
-    vl_model_req = VLPredictRequest(
-        image_gcs='user-input/image.jpg',  # TODO: THIS SHOULD NOT BE HARDCODED (IMAGE GCS URL IS CURRENTLY NONE)
-        text_raw=user_text,
-    )
+    if image_uri is not None:
+        vl_model_req = VLPredictRequestGCS(
+            image_gcs=image_uri,
+            text_raw=user_text,
+        )
+    else:
+        vl_model_req = VLPredictRequestBase64(
+            image_base64=image_base64,
+            text_raw=user_text,
+        )
     try:
         vl_model_res = post_vl_model(vl_model_req)
     except ServiceError as e:
