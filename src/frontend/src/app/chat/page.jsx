@@ -203,7 +203,7 @@ export default function ChatPage() {
 
       addMessage(
         "assistant",
-        `According to our AI engine, this appears to be a ${pred} bite (confidence: ${conf.toFixed(2)}).`
+        `According to our AI engine, this appears to be a ${pred.replaceAll('_', ' ')} bite with ${100*conf.toFixed(2)}% confidence.`
       );
 
       setRemainingOptions(allOptions);

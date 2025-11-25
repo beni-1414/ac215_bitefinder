@@ -122,15 +122,11 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
     except ServiceError as e:
         return {
             "ok": False,
-            "prediction": None,
-            "confidence": None,
-            "message": f"VL model prediction service error: {str(e)}",
+            "message": str(e),
             "results": results,
         }
 
     pred = vl_model_res.prediction
     conf = vl_model_res.confidence
 
-    message = f"According to our AI engine, you have been bitten by {pred} with {conf} confidence. "
-
-    return {"ok": True, "prediction": pred, "confidence": conf, "message": message, "results": results}
+    return {"ok": True, "prediction": pred, "confidence": conf, "results": results}

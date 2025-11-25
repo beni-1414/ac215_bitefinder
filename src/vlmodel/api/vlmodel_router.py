@@ -25,12 +25,14 @@ def load_model():
     global model, id_to_label, device
 
     # Retrieve W&B API key from secret manager
+    print("LOAD:     Logging into W&B...")
     wandb_key = get_secret('WANDB_API_KEY')
     if wandb_key:
         os.environ['WANDB_API_KEY'] = wandb_key
 
     # Initialize W&B API
     api = wandb.Api()
+    print("DONE:     Logged into W&B.")
 
     artifact_root = os.environ['WANDB_TEAM'] + '/' + os.environ['WANDB_PROJECT'] + '/'
     artifact_model_label = 'clip_20251123_191151'  # TODO: make dynamic
@@ -44,8 +46,12 @@ def load_model():
     # Download artifact from W&B into persistent cache if not already cached
     artifact_dir = os.path.join(cache_dir, artifact_name.replace('/', '_').replace(':', '_'))
     if not os.path.exists(artifact_dir):
+        print("LOAD:     Downloading model weights from W&B...")
         artifact = api.artifact(artifact_name)
         artifact.download(root=artifact_dir)
+        print("DONE:     Model weights downloaded.")
+    else:
+        print("DONE:     Model weights already cached!")
 
     # Pull artifact metadata
     artifact = api.artifact(artifact_name)
@@ -54,12 +60,20 @@ def load_model():
     model_kwargs = metadata['model_kwargs']
     id_to_label = {int(k): v for k, v in metadata['id_to_label'].items()}
 
-    # Instansiate model from saved artifact
+    # Instansiate model from saved metadata
+    print("LOAD:     Instantiating model...")
     model_class = model_classes[model_id]
     model = model_class(**model_kwargs)
+    print("DONE:     Model instantiated.")
+
+    # Load model weights from saved artifact
+    print(f"LOAD:     Loading weights into {model_id} model...")
     model.model = model.model.from_pretrained(artifact_dir)
+    print(f"LOAD:     Loading weights into {model_id} processor...")
     model.processor = model.processor.from_pretrained(artifact_dir)
+    print("LOAD:     Loading weights into classification head...")
     model.classifier.load_state_dict(torch.load(f'{artifact_dir}/classifier.pt', map_location=torch.device(device)))
+    print("DONE:     Model is served.")
 
     # Set model to eval mode
     model.eval()
