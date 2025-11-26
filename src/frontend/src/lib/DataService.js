@@ -43,7 +43,7 @@ export async function evaluateBite(data) {
 
 // Add this to fix your error!
 export async function askRag(data) {
-  const res = await fetch(`/api/v1/orchestrator/rag`, {
+  const res = await fetch(`/api/v1/orchestrator/rag-agent`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),

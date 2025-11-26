@@ -15,6 +15,7 @@ export default function ChatPage() {
   const evalResRef = React.useRef(null);
   const [history, setHistory] = useState([]);
   const [hasPrediction, setHasPrediction] = useState(false);
+  const [ragSessionId, setRagSessionId] = useState(null);
 
   const allOptions = [
     "Relief & treatment",
@@ -76,6 +77,18 @@ export default function ChatPage() {
     return "No advice was returned.";
   }
 
+  function getRagAnswer(ragRes) {
+    if (!ragRes) return "No advice was returned.";
+    if (ragRes.answer) return ragRes.answer;
+    return extractAdvice(ragRes.llm);
+  }
+
+  function persistSessionId(ragRes) {
+    if (ragRes && ragRes.session_id) {
+      setRagSessionId(ragRes.session_id);
+    }
+  }
+
 
   // -------------------------------
   // FOLLOW-UP QUESTION HANDLER
@@ -95,9 +108,12 @@ export default function ChatPage() {
         symptoms: lastUserMessage,
         bug_class: evalResRef.current.prediction || "unknown",
         conf: evalResRef.current.confidence || 0.0,
+        session_id: ragSessionId,
       });
 
-      const answer = extractAdvice(ragRes.llm);
+      persistSessionId(ragRes);
+
+      const answer = getRagAnswer(ragRes);
       addMessage("assistant", answer);
 
       if (nextOptions.length > 0) {
@@ -159,9 +175,12 @@ export default function ChatPage() {
           symptoms: lastUserMessage,
           bug_class: evalResRef.current?.prediction || "unknown",
           conf: evalResRef.current?.confidence || 0.0,
+          session_id: ragSessionId,
         });
 
-        const answer = extractAdvice(ragRes.llm);
+        persistSessionId(ragRes);
+
+        const answer = getRagAnswer(ragRes);
         addMessage("assistant", answer);
 
       } catch (err) {
