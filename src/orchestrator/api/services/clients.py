@@ -4,7 +4,7 @@ from typing import Any, Dict
 import httpx
 
 from api.config import settings
-from api.schemas import VLPredictRequestGCS, VLPredictRequestBase64, VLPredictResponse, RAGRequest, RAGModelWrapper
+from api.schemas import VLPredictRequestGCS, VLPredictRequestBase64, VLPredictResponse, RAGRequest, RAGModelResponse
 
 
 class ServiceError(RuntimeError):
@@ -39,7 +39,7 @@ def post_vl_model(req: VLPredictRequestBase64 | VLPredictRequestGCS, timeout: fl
     return VLPredictResponse.model_validate(r.json())
 
 
-def post_rag_chat(req: RAGRequest, timeout: float = 10.0) -> RAGModelWrapper:
+def post_rag_chat(req: RAGRequest, timeout: float = 10.0) -> RAGModelResponse:
     url = f"{settings.RAG_MODEL_URL}/rag/chat"
     with httpx.Client(timeout=timeout) as c:
         payload = req.model_dump()
@@ -58,4 +58,4 @@ def post_rag_chat(req: RAGRequest, timeout: float = 10.0) -> RAGModelWrapper:
     if r.status_code >= 400:
         raise ServiceError(f"rag-model error {r.status_code}: {r.text}")
 
-    return RAGModelWrapper.model_validate(r.json())
+    return RAGModelResponse.model_validate(r.json())
