@@ -57,11 +57,6 @@ def client():
     return TestClient(app)
 
 
-# --------------------------
-# Integration Tests
-# --------------------------
-
-
 # Test: text_raw + image_gcs
 @patch("api.vlmodel_router.storage.Client")
 def test_predict_text_raw_image_gcs(mock_storage_client, client):

@@ -141,14 +141,14 @@ def test_predict_missing_gcs_blob(mock_storage_client, client):
 def test_load_model(monkeypatch):
     from api import vlmodel_router as vl
 
-    # --- Mock get_secret ---
+    # Mock get_secret
     monkeypatch.setattr(vl, "get_secret", lambda key: "fake_wandb_key")
 
-    # --- Mock os.environ ---
+    # Mock W&B env vars
     monkeypatch.setenv("WANDB_TEAM", "team")
     monkeypatch.setenv("WANDB_PROJECT", "project")
 
-    # --- Mock wandb.Api ---
+    # Mock wandb.Api
     fake_artifact = MagicMock()
     fake_artifact.download.return_value = "/fake/path"
     fake_artifact.metadata = {"model_id": "dummy_model", "model_kwargs": {"num_labels": 3}, "id_to_label": {"0": "A", "1": "B", "2": "C"}}
@@ -156,7 +156,7 @@ def test_load_model(monkeypatch):
     fake_api.artifact.return_value = fake_artifact
     monkeypatch.setattr(vl.wandb, "Api", lambda: fake_api)
 
-    # --- Mock model_classes ---
+    # Mock model
     class DummyModel:
         def __init__(self, num_labels):
             self.model = MagicMock()
