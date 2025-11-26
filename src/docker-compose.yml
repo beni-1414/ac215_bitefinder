@@ -49,7 +49,7 @@ services:
       - "8004:9000"
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: "/secrets/bitefinder-service-account.json"
-      GCP_PROJECT: "bitefinder-irith" # TODO: synchronize which GCP project secret manager W&B API key is stored in (change to main bf project)
+      GCP_PROJECT: "bitefinder-474614"
       GCP_BUCKET_NAME: "bitefinder-data"
       WANDB_TEAM: "bitefinder"
       WANDB_PROJECT: "bitefinder-vl"

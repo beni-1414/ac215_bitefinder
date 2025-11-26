@@ -34,17 +34,18 @@ def load_model():
     api = wandb.Api()
     print("DONE:     Logged into W&B.")
 
-    artifact_root = os.environ['WANDB_TEAM'] + '/' + os.environ['WANDB_PROJECT'] + '/'
-    artifact_model_label = 'clip_20251123_191151'  # TODO: make dynamic
-    artifact_model_version = 'v0'
-    artifact_name = artifact_root + artifact_model_label + ':' + artifact_model_version
-
     # Retrieve cache directory for model weights (or make if first time)
     cache_dir = os.getenv('MODEL_CACHE_DIR', '/tmp/vlmodel_cache')
     os.makedirs(cache_dir, exist_ok=True)
 
+    artifact_root = os.environ['WANDB_TEAM'] + '/' + os.environ['WANDB_PROJECT'] + '/'
+    artifact_model_label = 'clip_20251123_191151'  # TODO: make dynamic
+    artifact_model_version = 'v0'
+    artifact_name = artifact_root + artifact_model_label + ':' + artifact_model_version
+    artifact_cache = artifact_model_label + '_' + artifact_model_version
+
     # Download artifact from W&B into persistent cache if not already cached
-    artifact_dir = os.path.join(cache_dir, artifact_name.replace('/', '_').replace(':', '_'))
+    artifact_dir = os.path.join(cache_dir, artifact_cache)
     if not os.path.exists(artifact_dir):
         print("LOAD:     Downloading model weights from W&B...")
         artifact = api.artifact(artifact_name)
