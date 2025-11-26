@@ -72,6 +72,7 @@ class RAGRequest(BaseModel):
     symptoms: Optional[str] = None
     conf: Optional[float] = None
     bug_class: Optional[str] = None
+    session_id: Optional[str] = None
 
 
 # class RAGResponse(BaseModel):
