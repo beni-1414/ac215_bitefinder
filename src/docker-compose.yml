@@ -26,7 +26,8 @@ services:
       - "8003:9000"
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: "/secrets/bitefinder-service-account.json"
-      # GCP_PROJECT: 'bitefinder-irith' <- I think we need to set GCP_PROJECT with Vertex AI API enabled for RAG to work, but this wasn't here before...
+      GCP_PROJECT: 'bitefinder-474614'
+      PINECONE_INDEX: bugbite-rag
     volumes:
       - ../../secrets:/secrets:ro
 

@@ -1,10 +1,22 @@
 import os
 from typing import List, Dict, Any
 from pinecone import Pinecone
+from google.cloud import secretmanager
+
+
+def get_secret(secret_id: str) -> str:
+    """Retrieve a secret from Google Secret Manager."""
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/{os.getenv('GCP_PROJECT')}/secrets/{secret_id}/versions/latest"
+    response = client.access_secret_version(name=name)
+    return response.payload.data.decode("UTF-8")
 
 
 def _index():
-    pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+    pinecone_api_key = get_secret("PINECONE_API_KEY")
+    if not pinecone_api_key:
+        pinecone_api_key = os.environ["PINECONE_API_KEY"]
+    pc = Pinecone(api_key=pinecone_api_key)
     return pc.Index(os.environ["PINECONE_INDEX"])
 
 
