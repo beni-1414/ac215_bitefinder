@@ -18,11 +18,16 @@ router = APIRouter()
 model = None
 id_to_label = None
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model_loaded = False
 
 
 @router.on_event('startup')
 def load_model():
-    global model, id_to_label, device
+    global model, id_to_label, device, model_loaded
+
+    if model_loaded:
+        return
+    model_loaded = True
 
     # Retrieve W&B API key from secret manager
     print("LOAD:     Logging into W&B...")
