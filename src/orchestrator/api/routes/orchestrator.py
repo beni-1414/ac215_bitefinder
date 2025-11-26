@@ -30,7 +30,9 @@ def orchestrate_evaluate(req: OrchestratorEvaluateRequest) -> Dict[str, Any]:
 
     # Call image evaluator if present
     try:
-        if image_uri:
+        if image_base64:
+            results["image"] = post_input_eval_image({"image_base64": image_base64})
+        elif image_uri:
             results["image"] = post_input_eval_image({"image_gcs_uri": image_uri})
     except ServiceError as e:
         results["image"] = {"error": str(e)}

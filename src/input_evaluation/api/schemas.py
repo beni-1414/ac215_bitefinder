@@ -25,6 +25,7 @@ class TextEvalResponse(BaseModel):
 # Image
 class ImageEvalJSONRequest(BaseModel):
     image_gcs_uri: Optional[str] = None
+    image_base64: Optional[str] = None
 
 
 class ImageMetrics(BaseModel):
