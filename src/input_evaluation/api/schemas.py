@@ -43,6 +43,6 @@ class ImageMetrics(BaseModel):
 class ImageEvalResponse(BaseModel):
     usable: bool
     improve_message: str
-    metrics: ImageMetrics
+    metrics: Optional[ImageMetrics] = None
     latency_ms: int
     source: str

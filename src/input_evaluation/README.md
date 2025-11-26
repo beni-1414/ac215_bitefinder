@@ -26,6 +26,8 @@ Response:
   "improve_message": null,
   "combined_text": null,
   "high_danger": false,
+  "question_relevant": true,
+  "courtesy": false,
   "latency_ms": 123
 }
 ```
