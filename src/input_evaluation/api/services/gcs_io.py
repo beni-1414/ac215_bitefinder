@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Tuple
 from urllib.parse import urlparse
 from google.cloud import storage
+from fastapi import HTTPException, status
 
 _client: storage.Client | None = None
 
@@ -14,7 +15,8 @@ def get_client() -> storage.Client:
 
 
 def parse_gs_uri(uri: str) -> Tuple[str, str]:
-    assert uri.startswith("gs://"), "GCS URI must start with gs://"
+    if not uri.startswith("gs://"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="GCS URI must start with gs://")
     p = urlparse(uri)
     bucket = p.netloc
     blob = p.path.lstrip("/")

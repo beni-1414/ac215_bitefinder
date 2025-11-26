@@ -89,7 +89,7 @@ class RAGModelPayload(BaseModel):
     conf: Optional[float] = None
 
 
-class RAGModelWrapper(BaseModel):
+class RAGModelResponse(BaseModel):
     status: str
     payload: RAGModelPayload
     latency_ms: Optional[int] = None

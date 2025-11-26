@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from api.routes import rag as rag_module
-from api.schemas import RAGRequest, RAGModelWrapper, RAGModelPayload
+from api.schemas import RAGRequest, RAGModelResponse, RAGModelPayload
 
 
 def test_rag_route_builds_prompt_and_calls_llm(monkeypatch):
-    # Provide a fake RAGModelWrapper with context
-    fake_wrapper = RAGModelWrapper(
+    # Provide a fake RAGModelResponse with context
+    fake_wrapper = RAGModelResponse(
         status="ok",
         payload=RAGModelPayload(context="context text"),
         latency_ms=5,

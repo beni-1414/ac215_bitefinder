@@ -57,7 +57,7 @@ def test_image_eval_rejects_non_gs_uri():
         "/v1/evaluate/image",
         json={"image_gcs_uri": "http://example.com/x.jpg"},
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 400
     data = resp.json()
     # our route raises HTTPException(detail=...), so detail should be the string
-    assert data["detail"] == "image_gcs_uri must be a gs:// URI"
+    assert data["detail"] == "GCS URI must start with gs://"
