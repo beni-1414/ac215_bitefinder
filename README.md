@@ -8,6 +8,10 @@ Team Members: Jack Hwang, Zoe Zabetian, Irith Katiyar, Benet Fité
 
 BiteFinder is an AI-powered web app that helps users identify bug bites and receive tailored treatment advice. By combining a user's image and text data through a multimodal ML pipeline, it classifies the likely bug type and retrieves relevant medical guidance using a RAG model.
 
+## MS 4
+
+All of the required documentation for MS 4 is contained in this README file (e.g., application design document, local setup and usage, data versioning, model fine-tuning summary), or linked from this README file (e.g., screenshots in `docs` folder of solution and technical architecture and CI run, container README's).
+
 ## Usage
 
 ### Prerequisites
@@ -60,6 +64,8 @@ More detail about this container and its individual usage can be found in [src/r
 
 This container implements a FastAPI web service that is responsible for the chatting Q/A with the user. We currently have two equivalent implementations for our orchestrator: a fully hard-coded version that controls the logic of when each of the services is called, and an agentic version that controls the follow-up Q/A and when our RAG service is called. The orchestrator serves as the layer between the frontend and the above backend services.
 
+More detail about this container and its individual usage can be found in [src/orchestrator/README.md](src/orchestrator/README.md).
+
 ### frontend
 
 The frontend contains our React-based app using Next.js. It contains all of the necessary UI modules for our chat. We are currently in the process of refining our UI, but our current version has a single page with a chat box where the user can send text and an image and engage with our AI expert with questions.
@@ -97,11 +103,19 @@ More detail about this container and its individual usage can be found in [src/v
 
 ## Continuous Integration
 
-TODO (explain what is in CI pipeline in yaml file, and explain github actions error, and where screenshot is)
+Our continuous integration pipeline is defined in `.github/workflows/ci.yml`. Whenever a developer pushes code to the main branch of our GitHub repository, our GitHub Actions workflow is triggered, which builds each service image, runs linting and formatting on them, runs its tests, and generates a coverage report. Our formatter is Black and our linter is Flake8.
+
+Unfortunately (since we are on the free tier of GitHub), whenever we run our CI pipeline now we get an error on GitHub Actions stating: `Artifact storage quota has been hit. Unable to upload any new artifacts.` when building each image. We have tried clearing the artifact storage and waiting 24 hours but we still get this error and we don't know how to fix it. Our last successful run of our CI pipeline is [here](docs/ci_pipeline_sample_run.png).
 
 ### Testing
 
-TODO (how to run unit/integration tests, how to run system tests, where to find coverage screenshots)
+Each backend service container contains a `tests` folder which has `unit` and `integration` tests in their respective subdirectories.
+
+To run tests locally:
+1. Navigate to `src/<service-name>` (e.g., `src/vlmodel`).
+2. Run `pytest --cov=api --cov-report=term-missing` to run the tests and generate a coverage report.
+
+Screenshots of coverage reports can be found in our `docs` folder.
 
 ## Data Versioning
 
