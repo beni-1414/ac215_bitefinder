@@ -40,7 +40,7 @@ Each container is organized as a stateless FastAPI container with an `api/` fold
 
 The general flow of our application is that when a user sends a message in the chat, the frontend will call the orchestrator service, which is responsible for calling the input evaluation, prediction, and RAG services as appropriate. When the user sends the initial image and text, the orchestrator calls the input evaluation service, and if of good quality, calls the VL model service that returns a prediction. When the user is sending follow-up questions, the orchestrator's LLM engages with Q/A with the user and decides whether/when to call the RAG tool.
 
-Our application's solution architecture and technical architecture are described here: INSERT!
+Our application's solution architecture and technical architecture are described in the presentation here: [docs/solution-architecture.pdf](docs/solution-architecture.pdf).
 
 ### input_evaluation
 
