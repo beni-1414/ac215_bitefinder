@@ -1,7 +1,5 @@
-encryptionsalt: v1:Ql1K//qmtaQ=:v1:fhFyMtpDtq0O41hJ:fA2sI27np3naGsGEOOg3GMoHM2TJfw==
+encryptionsalt: v1:vmgGxQyBMLw=:v1:vZuGFwZ7Y0y/nMOr:s1r530hWuVrwvMpJQ88UOOYecoaHVA==
 config:
   gcp:project: bitefinder-474614
-  security:ssh_user: sa_115537498138380489735
   security:gcp_service_account_email: deployment@bitefinder-474614.iam.gserviceaccount.com
   security:gcp_ksa_service_account_email: gcp-service@bitefinder-474614.iam.gserviceaccount.com
-  deploy-k8s:setupSSL: "false"

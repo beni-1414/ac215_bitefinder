@@ -3,14 +3,16 @@
 # exit immediately if a command exits with a non-zero status
 #set -e
 
+source ../../env.dev
+
 # Define some environment variables
-export IMAGE_NAME="cheese-app-deployment"
+export IMAGE_NAME="bitefinder-deployment"
 export BASE_DIR=$(pwd)
 export SECRETS_DIR=$(pwd)/../../../secrets/
 export SSH_DIR=$(pwd)/../../../secrets/
 # export SECRETS_DIR=$(pwd)/../../../secrets/ac215-project/
 # export SSH_DIR=$(pwd)/../../../secrets/ac215-project/
-export GCP_PROJECT="ac215-project" # Change to your GCP Project
+export GCP_PROJECT="bitefinder-474614" # Change to your GCP Project
 export GCP_REGION="us-central1"
 export GCP_ZONE="us-central1-a"
 export GOOGLE_APPLICATION_CREDENTIALS=/secrets/deployment.json
