@@ -1,9 +1,0 @@
-By IRITH KATIYAR:
-
-To download the data:
-https://www.kaggle.com/datasets/moonfallidk/bug-bite-images
-1. Click download
-2. ⁠Unzip the file
-3. ⁠Go to the root of our repository and create a data/ folder
-4. ⁠Add the unzipped folder bug_bite_images inside data/
-⁠I already made a gitignore to ignore anything in the data/ folder so it should not get committed to github

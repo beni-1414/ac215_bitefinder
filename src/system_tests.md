@@ -1,4 +1,4 @@
-## Launch the /docs visualization in a browser and try the following test cases:
+## Launch the /docs visualization in a browser and try the following endpoint test cases with the given request bodies:
 
 ### orchestrator input evaluation:
 
@@ -41,7 +41,7 @@ For all good:
 
 Should return a prediction of chiggers based on our vlmodel.
 
-### Rag endpoint:
+### rag endpoint:
 
 {
   "question": "How can I treat this bite?",

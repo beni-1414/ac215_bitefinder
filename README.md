@@ -38,7 +38,7 @@ Our application design follows a microservices architecture, separated into the 
 
 Each container is organized as a stateless FastAPI container with an `api/` folder and a `tests/` folder (except the frontend, which is organized as a standard Next.js app). Each container is Dockerized, with a `Dockerfile` and dependency file (`pyproject.toml` for everything except the frontend that has `package.json`). Each container also has a `docker-shell.sh` file for local development of each individual container.
 
-The general flow of our application is that when a user sends a message in the chat, the frontend will call the orchestrator service, which is responsible for calling the input evaluation, prediction, and RAG services as appropriate. When the user sends the initial image and text, the orchestrator calls the input evaluation service, and if of good quality, calls the VL model service that returns a prediction. When the user is sending follow-up questions, the orchestrator's LLM agent engages with Q/A with the user and decides whether/when to call the RAG tool.
+The general flow of our application is that when a user sends a message in the chat, the frontend will call the orchestrator service, which is responsible for calling the input evaluation, prediction, and RAG services as appropriate. When the user sends the initial image and text, the orchestrator calls the input evaluation service, and if of good quality, calls the VL model service that returns a prediction. When the user is sending follow-up questions, the orchestrator's LLM engages with Q/A with the user and decides whether/when to call the RAG tool.
 
 Our application's solution architecture and technical architecture are described here: INSERT!
 
@@ -107,7 +107,9 @@ Our continuous integration pipeline is defined in `.github/workflows/ci.yml`. Wh
 
 Unfortunately (since we are on the free tier of GitHub), whenever we run our CI pipeline now we get an error on GitHub Actions stating: `Artifact storage quota has been hit. Unable to upload any new artifacts.` when building each image. We have tried clearing the artifact storage and waiting 24 hours but we still get this error and we don't know how to fix it. Our last successful run of our CI pipeline is [here](docs/ci_pipeline_sample_run.png).
 
-### Testing
+## Testing
+
+### Unit and Integration Tests
 
 Each backend service container contains a `tests` folder which has `unit` and `integration` tests in their respective subdirectories.
 
@@ -115,11 +117,19 @@ To run tests locally:
 1. Navigate to `src/<service-name>` (e.g., `src/vlmodel`).
 2. Run `pytest --cov=api --cov-report=term-missing` to run the tests and generate a coverage report.
 
-Screenshots of coverage reports can be found in our `docs` folder.
+Screenshots of passing tests and coverage reports can be found in [docs/test_coverage](docs/test_coverage) folder for each backend service container.
+
+### System Tests
+
+Follow the instructions in [system_tests.md](src/system_tests.md) to run end-to-end tests on our application endpoints using the FastAPI docs interface.
 
 ## Data Versioning
 
 Since our data does not change ofter, we are not using a data versioning tool like DVC. Instead, we are storing all our data in a GCP bucket, and saving snapshots of the data whenever it changes with the pattern `data_v{version_number}`. That way, when we train a model we can specify exactly which version of the data we used and it is reproducible.
+
+### Raw Data
+
+The raw image data used for bug bite classification is available here: https://www.kaggle.com/datasets/moonfallidk/bug-bite-images. The directory structure of this dataset is what is followed/expected by our trainer.
 
 ## Model Fine-Tuning
 
