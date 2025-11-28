@@ -44,7 +44,7 @@ def load_model():
     os.makedirs(cache_dir, exist_ok=True)
 
     artifact_root = os.environ['WANDB_TEAM'] + '/' + os.environ['WANDB_PROJECT'] + '/'
-    artifact_model_label = 'clip_20251123_191151'  # TODO: make dynamic
+    artifact_model_label = 'clip_20251128_220924'  # TODO: make dynamic
     artifact_model_version = 'v0'
     artifact_name = artifact_root + artifact_model_label + ':' + artifact_model_version
     artifact_cache = artifact_model_label + '_' + artifact_model_version

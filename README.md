@@ -27,6 +27,8 @@ All of the required documentation for MS 4 is contained in this README file (e.g
 3. Run `docker compose up` to run all of the containers.
 4. Type `http://localhost:3001/chat` in your browser!
 
+(Note that vlmodel application startup takes some time to complete.)
+
 ## Application Design
 
 Our application design follows a microservices architecture, separated into the following containers:
