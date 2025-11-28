@@ -19,6 +19,9 @@ This service implements a modular retrieval-augmented generation (RAG) pipeline 
 | `api/scripts/create_index.py`       | One-time utility that creates (or recreates) the Pinecone index: sets name, dimensions, and serverless config. Called automatically by `build_vector_store.py`, but can also be run manually if needed. |
 | `api/main.py`       | FastAPI application entrypoint - starts the RAG Preprocessor API server, loads routes, and exposes HTTP endpoint `/rag/chat` |
 | `api/__init__.py`               | Marks the `api` directory as a Python package and exposes submodules for routes, services, and scripts.                                                    |
+| `tests/unit/test_rag_pipeline.py`         | Unit tests for the core RAG preprocessing logic implemented in `chat()`, using mocks for embeddings and vector search.               |
+| `tests/unit/test_rag_router.py`           | Unit tests for the `/rag/chat` API route, verifying request/response structure and router–pipeline wiring.                           |
+| `tests/integration/test_rag_chat_integration.py` | Integration tests for the `/rag/chat` endpoint using FastAPI’s `TestClient`, validating end-to-end wiring while mocking external cloud services.        |
 | `Dockerfile`                    | Defines the build instructions for containerizing the RAG application.                                                                                     |
 | `docker-compose.yml`            | Configures how the RAG container runs and interacts with other services (e.g., orchestrator, databases).                                                   |
 | `docker-entrypoint.sh` | Entrypoint script for the RAG container. Activates the virtual environment inside the image, loads environment variables, and launches the FastAPI server (DEV mode drops you into a shell; PROD mode auto-starts `uvicorn`). |
@@ -147,4 +150,24 @@ This test ensures:
 **Run it with:**
 ```
 python -m tests.unit.test_rag_router
+```
+### Integration Tests
+Integration tests exercise the full FastAPI stack for the RAG service while still mocking external cloud dependencies (Vertex AI, Pinecone, Secret Manager), ensuring the HTTP layer and RAG wiring behave as expected.
+
+#### 3. `tests/integration/test_rag_chat_integration.py`
+
+**Validates the `/rag/chat` endpoint together with the RAG router using FastAPI’s `TestClient`.**
+
+This test ensures:
+
+- a realistic JSON request body with `symptoms`, `conf`, and `bug_class` is accepted by the API
+- the router calls the underlying `chat()` pipeline function imported in `api.routes.rag_router` (mocked in the test)
+- the response structure matches the production contract:
+  - `"status": "ok"`
+  - `"payload": {...}` (including `question`, `prompt`, `context`, `bugclass`, `conf`)
+  - `"latency_ms"` as an integer
+
+**Run it with:**
+```
+pytest tests/integration/test_rag_chat_integration.py
 ```
