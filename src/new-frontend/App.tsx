@@ -199,9 +199,9 @@ const App: React.FC = () => {
         {view === AppView.HOME && (
           <div className="max-w-4xl mx-auto text-center space-y-6 mt-8">
             <div className="space-y-3">
-              <h2 className="text-4xl font-serif font-bold text-earth-900">Got Bitten?</h2>
+              <h2 className="text-4xl font-serif font-bold text-earth-900">What Bit You?</h2>
               <p className="text-lg text-earth-600">
-                Upload a photo and describe what happened. We'll identify it and help you treat it.
+                Upload a photo and describe the scene. We'll play detective and help you heal up!
               </p>
             </div>
             <UploadSection onAnalyze={handleAnalyze} isAnalyzing={false} />
