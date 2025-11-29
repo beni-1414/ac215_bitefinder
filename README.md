@@ -119,7 +119,7 @@ To run tests locally:
 1. Navigate to `src/<service-name>` (e.g., `src/vlmodel`).
 2. Run `pytest --cov=api --cov-report=term-missing` to run the tests and generate a coverage report.
 
-Screenshots of passing tests and coverage reports can be found in [docs/test_coverage](docs/test_coverage) folder for each backend service container.
+Screenshots of passing tests and coverage reports can be found in [docs/test_coverage](docs/test_coverage) folder for each backend service container. All of our test suites exceed the 75% coverage requirement.
 
 ### System Tests
 
