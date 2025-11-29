@@ -10,11 +10,22 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
     # Get the image tags (these are arrays, so we take the first element)
     # NOTE: adjust these output names to match your deploy-images stack
     base_tag = "us-east1-docker.pkg.dev/bitefinder-474614/bitefinder-images/"
-    frontend_tag = base_tag + "frontend:latest"
-    orchestrator_tag = base_tag + "orchestrator:latest"
-    vlmodel_tag = base_tag + "bitefinder-vlmodel:latest"
-    ragmodel_tag = base_tag + "ragmodel:latest"
-    input_evaluation_tag = base_tag + "input-evaluation:latest"
+    images_stack = pulumi.StackReference("organization/deploy-images/dev")
+
+    frontend_tag = images_stack.get_output("frontend-tags").apply(lambda tags: tags[0])
+    orchestrator_tag = images_stack.get_output("orchestrator-tags").apply(lambda tags: tags[0])
+    # vlmodel_tag = images_stack.get_output("vlmodel-tags").apply(
+    #     lambda tags: tags[0]
+    # )
+    vlmodel_tag = base_tag + "vlmodel:28112025"
+    ragmodel_tag = images_stack.get_output("ragmodel-tags").apply(lambda tags: tags[0])
+    input_evaluation_tag = images_stack.get_output("input-evaluation-tags").apply(lambda tags: tags[0])
+
+    # frontend_tag = base_tag + "frontend:latest"
+    # orchestrator_tag = base_tag + "orchestrator:latest"
+    # vlmodel_tag = base_tag + "bitefinder-vlmodel:latest"
+    # ragmodel_tag = base_tag + "ragmodel:latest"
+    # input_evaluation_tag = base_tag + "input-evaluation:latest"
 
     # General persistent storage for application data (used for VL model cache, 10Gi)
     vlmodel_cache_pvc = k8s.core.v1.PersistentVolumeClaim(
@@ -33,7 +44,7 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
     )
 
     # --- Frontend Deployment ---
-    # Creates pods running the frontend container on port 3000
+    # Serves the static Vite build via nginx on port 80
     frontend_deployment = k8s.apps.v1.Deployment(
         "frontend",
         metadata=k8s.meta.v1.ObjectMetaArgs(
@@ -56,25 +67,9 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                             image_pull_policy="IfNotPresent",
                             ports=[
                                 k8s.core.v1.ContainerPortArgs(
-                                    container_port=3000,
+                                    container_port=80,
                                     protocol="TCP",
                                 )
-                            ],
-                            env=[
-                                # Match docker-compose: NEXT_PUBLIC_BASE_API_URL=http://orchestrator:9000
-                                k8s.core.v1.EnvVarArgs(
-                                    name="NEXT_PUBLIC_BASE_API_URL",
-                                    value="/orchestrator",
-                                ),
-                                k8s.core.v1.EnvVarArgs(
-                                    name="PORT",
-                                    value="3000",
-                                ),
-                                # CHOKIDAR_USEPOLLING is mainly for dev; keep for parity if desired
-                                k8s.core.v1.EnvVarArgs(
-                                    name="CHOKIDAR_USEPOLLING",
-                                    value="true",
-                                ),
                             ],
                             resources=k8s.core.v1.ResourceRequirementsArgs(
                                 requests={"cpu": "250m", "memory": "2Gi"},
@@ -98,8 +93,8 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
             type="ClusterIP",
             ports=[
                 k8s.core.v1.ServicePortArgs(
-                    port=3000,
-                    target_port=3000,
+                    port=80,
+                    target_port=80,
                     protocol="TCP",
                 )
             ],

@@ -58,7 +58,7 @@ def create_cluster(project, region, network, subnet, app_name):
         ),
         autoscaling=gcp.container.NodePoolAutoscalingArgs(
             min_node_count=1,  # Minimum nodes to keep running
-            max_node_count=2,  # Maximum nodes for scale-up
+            max_node_count=4,  # Maximum nodes for scale-up
         ),
         management=gcp.container.NodePoolManagementArgs(
             auto_repair=True,  # Automatically repair unhealthy nodes
