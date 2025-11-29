@@ -222,7 +222,7 @@ export default function ChatPage() {
 
       addMessage(
         "assistant",
-        `According to our AI engine, this appears to be a ${pred.replaceAll('_', ' ')} bite with ${100*conf.toFixed(2)}% confidence.`
+        `According to our AI engine, this appears to be a ${pred.replaceAll('_', ' ').slice(0, -1)} bite with ${Math.round(conf * 100)}% confidence.`
       );
 
       setRemainingOptions(allOptions);

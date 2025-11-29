@@ -1,0 +1,7 @@
+{
+  "name": "BiteFinder",
+  "description": "An outdoorsy app for hikers to identify bug bites and get advice from Ranger Rick.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

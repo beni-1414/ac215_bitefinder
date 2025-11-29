@@ -63,7 +63,7 @@ services:
   frontend:
     image: src-frontend:latest
     build:
-      context: ./frontend
+      context: ./new-frontend #change to new-frontend
       dockerfile: Dockerfile.dev
     container_name: frontend
     ports:
@@ -73,7 +73,7 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - PORT=3000
     volumes:
-      - ./frontend:/app
+      - ./new-frontend:/app  #change to new-frontend
       - /app/node_modules
     command: -c "npm install && npm run dev"
     depends_on:

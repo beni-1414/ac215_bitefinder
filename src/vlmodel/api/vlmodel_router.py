@@ -18,11 +18,16 @@ router = APIRouter()
 model = None
 id_to_label = None
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model_loaded = False
 
 
 @router.on_event('startup')
 def load_model():
-    global model, id_to_label, device
+    global model, id_to_label, device, model_loaded
+
+    if model_loaded:
+        return
+    model_loaded = True
 
     # Retrieve W&B API key from secret manager
     print("LOAD:     Logging into W&B...")
@@ -39,7 +44,7 @@ def load_model():
     os.makedirs(cache_dir, exist_ok=True)
 
     artifact_root = os.environ['WANDB_TEAM'] + '/' + os.environ['WANDB_PROJECT'] + '/'
-    artifact_model_label = 'clip_20251123_191151'  # TODO: make dynamic
+    artifact_model_label = 'clip_20251128_225047'  # TODO: make dynamic
     artifact_model_version = 'v0'
     artifact_name = artifact_root + artifact_model_label + ':' + artifact_model_version
     artifact_cache = artifact_model_label + '_' + artifact_model_version

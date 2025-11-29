@@ -41,6 +41,14 @@ def test_chat_endpoint_returns_payload():
 
     print("Test passed.")
 
+    def test_chat_route_error():
+        client = TestClient(api)
+        # Send invalid payload to trigger error
+        payload = {"question": None, "symptoms": None, "conf": None, "bug_class": None}
+        response = client.post("/rag/chat", json=payload)
+        # Should return 500 or 422 depending on validation
+        assert response.status_code in (422, 500)
+
 
 if __name__ == "__main__":
     test_chat_endpoint_returns_payload()

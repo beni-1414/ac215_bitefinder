@@ -8,7 +8,14 @@ from api.services.clients import post_rag_chat, ServiceError
 from api.services.vertex_llm import get_llm
 import inspect
 
+# from pydantic import BaseModel
+# from api.services.agent import run_agent
+
+
 router = APIRouter(prefix="/v1/orchestrator", tags=["rag"])
+
+# adjust
+# CONF_THRESHOLD = 0.7
 
 
 @router.post("/rag")
@@ -53,3 +60,17 @@ def orchestrator_rag(req: RAGRequest) -> Dict[str, Any]:
         "context": context,
         "llm": llm_resp,
     }
+
+
+# class AgentRequest(BaseModel):
+#     question: str
+#     bug_class: str | None = None
+#     conf: float | None = None
+
+# @router.post("/rag/agent")
+# def orchestrator_agent(req: AgentRequest):
+#     try:
+#         answer = run_agent(user_question=req.question, bug_class=req.bug_class, conf=req.conf)
+#         return {"status": "ok", "answer": answer}
+#     except Exception as e:
+#         raise HTTPException(status_code=502, detail=f"agent error: {e}")

@@ -1,6 +1,10 @@
+## Launch the /docs visualization in a browser and try the following endpoint test cases with the given request bodies:
+
+### orchestrator input evaluation:
+
 For a failure in text:
 {
-  "image_gcs_uri": "gs://bitefinder-data/user-input/chiggers_legimage111.jpg",
+  "image_gcs_uri": "gs://bitefinder-data/images/testing/chiggers/chiggers_legimage111.jpg",
   "user_text": "I was bitten while I was sleeping I believe",
   "overwrite_validation": false,
   "first_call": true,
@@ -35,4 +39,23 @@ For all good:
   "debug": false
 }
 
-I cannot continue as vlmodel and rag need a docker-entrypoint similar to orchestrator to run as a service. Please take care of that.
+Should return a prediction of chiggers based on our vlmodel.
+
+### rag endpoint:
+
+{
+  "question": "How can I treat this bite?",
+  "symptoms": "itchy red bite",
+  "conf": 0.6,
+  "bug_class": "tick",
+  "session_id": "",
+}
+
+
+{
+  "question": "Do you know places in the US i could go buy rubbing alcohol? I am not from this country",
+  "symptoms": "itchy red bite",
+  "conf": 0.6,
+  "bug_class": "tick",
+  "session_id": "GET THE PREVIOUS SESSION ID FROM THE ORCHESTRATOR OUTPUT",
+}
