@@ -6,7 +6,7 @@ Team Members: Jack Hwang, Zoe Zabetian, Irith Katiyar, Benet Fité
 
 ## Overview
 
-BiteFinder is an AI-powered web app that helps users identify bug bites and receive tailored treatment advice. By combining a user's image and text data through a multimodal ML pipeline, it classifies the likely bug type and retrieves relevant medical guidance using a RAG model.
+Bite Finder is an AI-powered web app that helps users identify bug bites and receive tailored treatment advice. By combining a user's image and text data through a multimodal ML pipeline, it classifies the likely bug type and retrieves relevant medical guidance using a RAG model.
 
 ## MS 4
 
