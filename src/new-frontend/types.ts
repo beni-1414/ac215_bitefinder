@@ -3,9 +3,6 @@ export interface BiteAnalysis {
   scientificName: string;
   description: string;
   dangerLevel: 'Low' | 'Moderate' | 'High' | 'Emergency';
-  symptoms: string[];
-  treatmentTips: string[];
-  preventionTips: string[];
 }
 
 export interface ChatMessage {

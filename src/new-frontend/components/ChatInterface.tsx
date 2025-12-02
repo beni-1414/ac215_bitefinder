@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatMessage } from '../types';
-
+import rangerImage from './ranger.png';
 interface ChatInterfaceProps {
   messages: ChatMessage[];
   onSendMessage: (text: string) => void;
@@ -22,7 +22,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Only scroll if the chat container itself is being scrolled, not the page
+    if (messagesEndRef.current) {
+      const container = messagesEndRef.current.parentElement;
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
   };
 
   useEffect(() => {
@@ -43,7 +49,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div className="bg-forest-800 p-5 flex items-center gap-3 border-b border-forest-900">
         <div className="relative">
           <div className="w-10 h-10 rounded-full bg-earth-200 flex items-center justify-center border-2 border-forest-400 overflow-hidden">
-            <span className="text-xl">🤠</span>
+            <img
+              src={rangerImage}
+              alt="Ranger Rick"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-forest-800 rounded-full"></div>
         </div>
@@ -131,7 +141,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               }
             `}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 transform rotate-90">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
               <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
             </svg>
           </button>
