@@ -57,7 +57,7 @@ const App: React.FC = () => {
       });
 
       if (evalResult.needs_fix) {
-        setError(evalResult.error || "For best results, tell us your symptoms and where you were when you got bit.");
+        setError(evalResult.error || "For best results, please describe your symptoms and where you were when you got bitten");
         setView(AppView.HOME);
         return;
       }
@@ -68,28 +68,38 @@ const App: React.FC = () => {
       const pred = passed?.prediction || "unknown";
       const conf = typeof passed?.confidence === "number" ? passed.confidence : 0;
 
-      // Create a BiteAnalysis object from backend response
+      const scientificNameMap: Record<string, string> = {
+        ants: 'Formicidae family',
+        bed_bugs: 'Cimex lectularius family',
+        chiggers: 'Trombiculidae family',
+        fleas: 'Siphonaptera family',
+        mosquitos: 'Culicidae family',
+        spiders: 'Araneae family',
+        ticks: 'Ixodida family',
+      };
+
+      const prettyName = pred
+        .replaceAll('_', ' ')
+        .replace(/s$/, '')
+        .replace(/^./, str => str.toUpperCase());
+
+      const baseDangerLevelMap: Record<string, 'Low' | 'Moderate' | 'High'> = {
+        ants: 'Low',
+        bed_bugs: 'Low',
+        chiggers: 'Low',
+        fleas: 'Low',
+        mosquitos: 'Moderate',   // disease risk (e.g., West Nile, dengue) [web:27][web:35][web:37]
+        spiders: 'Moderate',     // some medically important species [web:21][web:24][web:25]
+        ticks: 'High',           // Lyme and other serious diseases [web:26][web:29][web:32][web:34][web:40]
+      };
+
+      const dangerLevel = baseDangerLevelMap[pred] ?? 'Low';
+
       const biteAnalysis: BiteAnalysis = {
-        bugName: pred.replaceAll('_', ' ').replace(/s$/, '').replace(/^./, str => str.toUpperCase()),
-        scientificName: `${pred.replaceAll('_', ' ')} family`,
-        description: `Based on the image and your description, this appears to be a ${pred.replaceAll('_', ' ').slice(0, -1)} bite with ${Math.round(conf * 100)}% confidence. These are common outdoor pests that can cause irritation.`,
-        dangerLevel: conf > 0.8 ? 'Moderate' : 'Low',
-        symptoms: [
-          'Redness and swelling at bite site',
-          'Itching or irritation',
-          'Small raised bump',
-        ],
-        treatmentTips: [
-          'Clean the area with soap and water',
-          'Apply ice to reduce swelling',
-          'Use anti-itch cream if needed',
-          'Avoid scratching to prevent infection',
-        ],
-        preventionTips: [
-          'Use insect repellent when outdoors',
-          'Wear long sleeves and pants in infested areas',
-          'Keep living areas clean and clutter-free',
-        ],
+        bugName: prettyName,
+        scientificName: scientificNameMap[pred] ?? prettyName,
+        description: `Based on the image and your description, this appears to be a ${prettyName.toLowerCase()} bite with ${Math.round(conf * 100)}% confidence. These are common outdoor pests that can cause irritation.`,
+        dangerLevel,
       };
 
       setAnalysis(biteAnalysis);
@@ -221,18 +231,42 @@ const App: React.FC = () => {
         )}
 
         {view === AppView.RESULT && analysis && (
-          <AnalysisResult
-            analysis={analysis}
-            uploadedImage={uploadedImage}
-            onReset={resetApp}
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            isChatLoading={isChatLoading}
-            showSuggestions={showSuggestions}
-            suggestions={remainingOptions}
-            onSuggestionClick={handleSendMessage}
-          />
+          <div className="max-w-6xl mx-auto mt-8">
+            {/* Top-left Start Over button */}
+            <button
+              onClick={resetApp}
+              className="mb-4 flex items-center text-earth-600 hover:text-forest-700 transition-colors font-medium"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-4 h-4 mr-1"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                />
+              </svg>
+              Start Over
+            </button>
+
+            <AnalysisResult
+              analysis={analysis}
+              uploadedImage={uploadedImage}
+              messages={messages}
+              onSendMessage={handleSendMessage}
+              isChatLoading={isChatLoading}
+              showSuggestions={showSuggestions}
+              suggestions={remainingOptions}
+              onSuggestionClick={handleSendMessage}
+            />
+          </div>
         )}
+
       </main>
 
       <footer className="bg-earth-200 text-earth-800 py-6 mt-auto">

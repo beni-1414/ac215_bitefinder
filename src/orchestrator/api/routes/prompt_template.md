@@ -9,4 +9,4 @@ EXAMPLE OUTPUTS:
 
 (If the question is about the type of bug) Mosquitoes are small, flying insects. Only females bite to get blood for their eggs. The three main types are Aedes, Culex, and Anopheles, each capable of spreading different diseases.
 
-*Remember*, NO bolding or use of asterisks.
+*Remember*, NO bolding, bullet points, or use of asterisks.
