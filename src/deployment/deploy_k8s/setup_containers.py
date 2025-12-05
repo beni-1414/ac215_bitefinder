@@ -132,10 +132,6 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                             ],
                             env=[
                                 k8s.core.v1.EnvVarArgs(
-                                    name="GOOGLE_APPLICATION_CREDENTIALS",
-                                    value="/secrets/bitefinder-service-account.json",
-                                ),
-                                k8s.core.v1.EnvVarArgs(
                                     name="GCP_PROJECT",
                                     value=project,
                                 ),
@@ -214,10 +210,6 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                                 )
                             ],
                             env=[
-                                k8s.core.v1.EnvVarArgs(
-                                    name="GOOGLE_APPLICATION_CREDENTIALS",
-                                    value="/secrets/bitefinder-service-account.json",
-                                ),
                                 k8s.core.v1.EnvVarArgs(
                                     name="GCP_PROJECT",
                                     value=project,
@@ -303,12 +295,6 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                                     container_port=9000,
                                     protocol="TCP",
                                 )
-                            ],
-                            env=[
-                                k8s.core.v1.EnvVarArgs(
-                                    name="GOOGLE_APPLICATION_CREDENTIALS",
-                                    value="/secrets/bitefinder-service-account.json",
-                                ),
                             ],
                             resources=k8s.core.v1.ResourceRequirementsArgs(
                                 requests={"cpu": "250m", "memory": "512Mi"},
