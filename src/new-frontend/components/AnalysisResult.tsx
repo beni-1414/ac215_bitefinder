@@ -38,34 +38,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
 
-      {/* Left Column: Chat Interface - MAIN FOCUS */}
-      <div className="lg:col-span-2">
-        <button
-          onClick={onReset}
-          className="flex items-center text-earth-600 hover:text-forest-700 transition-colors font-medium mb-4"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 mr-1">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-          </svg>
-          Start Over
-        </button>
-
-        <div className="mb-4">
-          <h2 className="text-2xl font-serif font-bold text-earth-900">Ask Ranger Rick</h2>
-          <p className="text-sm text-earth-600">Get personalized advice about your {analysis.bugName} bite</p>
-        </div>
-
-        <ChatInterface
-          messages={messages}
-          onSendMessage={onSendMessage}
-          isLoading={isChatLoading}
-          showSuggestions={showSuggestions}
-          suggestions={suggestions}
-          onSuggestionClick={onSuggestionClick}
-        />
-      </div>
-
-      {/* Right Column: Simplified Result Card - SIDEBAR */}
+      {/* Left Column: Simplified Result Card - SIDEBAR */}
       <div className="lg:col-span-1">
         <div className="lg:sticky lg:top-24">
           <div className="mb-3">
@@ -100,13 +73,13 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
                 {analysis.description}
               </p>
 
-              {/* Ranger Rick's Advice */}
+              {/* Ranger Rick's Rules */}
               <div className="bg-forest-50 rounded-lg p-4 border border-forest-100 mb-3">
                 <h3 className="font-serif font-bold text-forest-800 mb-3 text-base flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
-                  Ranger Rick's Advice
+                  Ranger Rick's Rules
                 </h3>
                 <ul className="space-y-2">
                   <li className="text-base text-forest-900 flex items-start">
@@ -133,6 +106,24 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Right Column: Chat Interface - MAIN FOCUS */}
+      <div className="lg:col-span-2">
+
+        <div className="mb-4">
+          <h2 className="text-2xl font-serif font-bold text-earth-900">Ask Ranger Rick</h2>
+          <p className="text-sm text-earth-600">Get personalized advice about your {analysis.bugName} bite</p>
+        </div>
+
+        <ChatInterface
+          messages={messages}
+          onSendMessage={onSendMessage}
+          isLoading={isChatLoading}
+          showSuggestions={showSuggestions}
+          suggestions={suggestions}
+          onSuggestionClick={onSuggestionClick}
+        />
       </div>
     </div>
   );

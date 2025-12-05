@@ -10,7 +10,7 @@ BiteFinder is an AI-powered web app that helps users identify bug bites and rece
 
 ## MS 4
 
-All of the required documentation for MS 4 is contained in this README file (e.g., application design document, local setup and usage, data versioning, model fine-tuning summary), or linked from this README file (e.g., screenshots in `docs` folder of solution and technical architecture and CI run, container README's).
+All of the required documentation for MS 4 is contained in this README file (e.g., application design document, local setup and usage, data versioning, model fine-tuning summary), or linked from this README file (e.g., solution and technical architecture and screenshots of CI run in `docs` folder, container README files).
 
 ## Usage
 
@@ -28,6 +28,8 @@ All of the required documentation for MS 4 is contained in this README file (e.g
 4. Type `http://localhost:3001/chat` in your browser!
 
 (Note that vlmodel application startup takes some time to complete.)
+
+A demo of our app is located in the [docs/frontend_demo](docs/frontend_demo) folder, which shows a series of screenshots navigating through our app's flow.
 
 ## Application Design
 
@@ -125,6 +127,33 @@ Screenshots of passing tests and coverage reports can be found in [docs/test_cov
 
 Follow the instructions in [system_tests.md](src/system_tests.md) to run end-to-end tests on our application endpoints using the FastAPI docs interface.
 
+## Model Fine-Tuning
+
+We experimented with two vision-language model architectures: CLIP and ViLT. Both models had their final layer replaced with our classification head to classify the one of seven bug bite types in our dataset. This classification head had linear layers with ReLU activation and dropout between. To experiment with the model architecture beyond just CLIP versus ViLT, we experimented with the number of linear layers in our classification head as well as the number of layers of the base model that we unfroze.
+
+We performed a grid search over the following set of hyperparameters:
+- Base model: CLIP, ViLT
+- Number of layers unfrozen in base: 1, 2, 3, 4
+- Number of layers in classification head: 1, 2, 3
+
+We kept the following training hyperparameters constant in the search space:
+- Epochs: 10
+- Batch size: 32
+- Optimizer: Adam
+- Loss function: cross entropy
+- Learning rate: 1e-4
+- Dropout: 0.1
+- Data version: latest
+
+We recorded metrics on both training and validation sets (80%-20% split), including training loss, validation loss, training accuracy, validation accuracy, and validation average correct confidence (which is the mean of the confidences given to the correct labels). A "good" model had both a high validation accuracy (picking the right answer most of the time) and a high validation average correct confidence (picking the right answer with high confidence). Some models had a high accuracy but low confidence, meaning they would always pick the right answer but by a very narrow margin. We wanted to avoid these models, so we did not necessarily pick the model with the highest validation accuracy.
+
+The best performing model was CLIP with 1 layer unfrozen and 3 layers in its classification head. It reached an accuracy of 94.0% and average correct confidence of 94.8% on the validation set. (The best ViLT model had 4 layers unfrozen and a classification head with 1 layer. It reached an accuracy of 86.9% and average correct confidence of 93.0% on the validation set.)
+
+Experiment results are located in the [docs/training_experiments](docs/training_experiments) folder, which contains select screenshots from Weights & Biases. Some observations and general trends to note:
+- The better CLIP models generally seemed to perform better than the better ViLT models, but ViLT generally had a higher average standard of performance compared to CLIP out of the entire search space of hyperparameters
+- In the CLIP models, as the number of unfrozen layers increased, the model performance generally increased.
+- In the CLIP models, as the number of classifier layers increased, the model performance generally increased.
+
 ## Data Versioning
 
 Since our data does not change ofter, we are not using a data versioning tool like DVC. Instead, we are storing all our data in a GCP bucket, and saving snapshots of the data whenever it changes with the pattern `data_v{version_number}`. That way, when we train a model we can specify exactly which version of the data we used and it is reproducible.
@@ -132,7 +161,3 @@ Since our data does not change ofter, we are not using a data versioning tool li
 ### Raw Data
 
 The raw image data used for bug bite classification is available here: https://www.kaggle.com/datasets/moonfallidk/bug-bite-images. The directory structure of this dataset is what is followed/expected by our trainer.
-
-## Model Fine-Tuning
-
-TODO

@@ -12,7 +12,7 @@ RULES:
 - If message mentions bug bites/insects AND has symptoms: question_relevant = true
 - If message is "hello", "hi", or other greetings: question_relevant = false
 - If message has BOTH symptoms AND location: complete = true
-- If message missing symptoms OR location: complete = false, improve_message = "For best results, tell us your symptoms and where you were when you got bit."
+- If message missing symptoms OR location: complete = false, improve_message = "For best results, tell us your symptoms and where you think you were when you got bit."
 
 DANGER CHECK:
 - If mentions "difficulty breathing" OR "throat swelling" OR "face swelling" OR "dizziness":
