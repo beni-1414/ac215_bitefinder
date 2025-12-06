@@ -62,4 +62,4 @@ USER app
 # Expose service port
 EXPOSE 9000
 
-ENTRYPOINT ["/bin/bash", "docker-entrypoint.sh"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

@@ -2,11 +2,13 @@ import os
 from typing import List, Dict, Any
 from pinecone import Pinecone
 from google.cloud import secretmanager
+from google.auth import default
 
 
 def get_secret(secret_id: str) -> str:
     """Retrieve a secret from Google Secret Manager."""
-    client = secretmanager.SecretManagerServiceClient()
+    credentials, _ = default()
+    client = secretmanager.SecretManagerServiceClient(credentials=credentials)
     name = f"projects/{os.getenv('GCP_PROJECT')}/secrets/{secret_id}/versions/latest"
     response = client.access_secret_version(name=name)
     return response.payload.data.decode("UTF-8")
