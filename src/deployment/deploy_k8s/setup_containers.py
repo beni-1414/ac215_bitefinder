@@ -1,6 +1,9 @@
 import pulumi
 import pulumi_kubernetes as k8s
 
+artifact_model_label = "clip_20251128_225047"
+artifact_model_version = "v0"
+
 
 def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
     # Get image references from deploy_images stack
@@ -232,6 +235,14 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                                 k8s.core.v1.EnvVarArgs(
                                     name="MODEL_CACHE_DIR",
                                     value="/app/vlmodel_cache",
+                                ),
+                                k8s.core.v1.EnvVarArgs(
+                                    name="ARTIFACT_MODEL_LABEL",
+                                    value=artifact_model_label,
+                                ),
+                                k8s.core.v1.EnvVarArgs(
+                                    name="ARTIFACT_MODEL_VERSION",
+                                    value=artifact_model_version,
                                 ),
                             ],
                             volume_mounts=[
