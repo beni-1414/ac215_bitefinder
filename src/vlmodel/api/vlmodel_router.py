@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, model_validator
 from PIL import Image
+from pillow_heif import register_heif_opener
 from io import BytesIO
 import base64
 import wandb
@@ -12,6 +13,8 @@ import torch
 from google.cloud import storage
 from api.package.training.model import model_classes
 from api.package.training.utils_secret import get_secret
+
+register_heif_opener()  # Enables HEIC decoding
 
 router = APIRouter()
 
@@ -23,6 +26,7 @@ model_loaded = False
 
 
 REQUIRED_FILES = [
+    "artifact.txt",
     "classifier.pt",
     "config.json",
     "merges.txt",
@@ -68,7 +72,7 @@ def load_model():
     print("DONE:     Logged into W&B.")
 
     artifact_root = os.environ['WANDB_TEAM'] + '/' + os.environ['WANDB_PROJECT'] + '/'
-    artifact_model_label = 'vilt_20251206_145815'  # TODO: make dynamic
+    artifact_model_label = 'clip_20251128_225047'  # TODO: make dynamic
     artifact_model_version = 'v0'
     artifact_name = artifact_root + artifact_model_label + ':' + artifact_model_version
 
