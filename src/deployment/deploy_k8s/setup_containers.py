@@ -17,7 +17,7 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
     # vlmodel_tag = images_stack.get_output("vlmodel-tags").apply(
     #     lambda tags: tags[0]
     # )
-    vlmodel_tag = base_tag + "vlmodel@sha256:8bc608b77ee3711e2fca3e00cc0338f0ae259305df243f9a2aee0d0b06a64150"  # "vlmodel:28112025"
+    vlmodel_tag = base_tag + "vlmodel@sha256:b8d498947034ea1fc00da8db4fb65759863839ccfaf263b714d4059d1bed5393"  # "vlmodel:28112025"
     ragmodel_tag = images_stack.get_output("ragmodel-tags").apply(lambda tags: tags[0])
     input_evaluation_tag = images_stack.get_output("input-evaluation-tags").apply(lambda tags: tags[0])
 
@@ -28,10 +28,10 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
     # input_evaluation_tag = base_tag + "input-evaluation:latest"
 
     # General persistent storage for application data (used for VL model cache, 10Gi)
-    vlmodel_cache_pvc = k8s.core.v1.PersistentVolumeClaim(
-        "vlmodel-cache-pvc",
+    vlmodel_pvc = k8s.core.v1.PersistentVolumeClaim(
+        "vlmodel-pvc",
         metadata=k8s.meta.v1.ObjectMetaArgs(
-            name="vlmodel-cache-pvc",
+            name="vlmodel-pvc",
             namespace=namespace.metadata.name,
         ),
         spec=k8s.core.v1.PersistentVolumeClaimSpecArgs(
@@ -189,12 +189,15 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                 ),
                 spec=k8s.core.v1.PodSpecArgs(
                     service_account_name=ksa_name,
+                    security_context=k8s.core.v1.PodSecurityContextArgs(
+                        fs_group=1000  # Ensure the mounted PVC is writable by the container user app (UID 1000)
+                    ),
                     volumes=[
                         k8s.core.v1.VolumeArgs(
                             name="vlmodel-cache",
                             persistent_volume_claim=(
                                 k8s.core.v1.PersistentVolumeClaimVolumeSourceArgs(
-                                    claim_name=vlmodel_cache_pvc.metadata.name,
+                                    claim_name=vlmodel_pvc.metadata.name,
                                 )
                             ),
                         )
@@ -246,7 +249,7 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                 ),
             ),
         ),
-        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace, vlmodel_cache_pvc]),
+        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace, vlmodel_pvc]),
     )
 
     vlmodel_service = k8s.core.v1.Service(

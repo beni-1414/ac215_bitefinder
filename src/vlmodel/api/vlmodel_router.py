@@ -7,6 +7,7 @@ from io import BytesIO
 import base64
 import wandb
 import os
+import shutil
 import torch
 from google.cloud import storage
 from api.package.training.model import model_classes
@@ -19,6 +20,33 @@ model = None
 id_to_label = None
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model_loaded = False
+
+
+REQUIRED_FILES = [
+    "classifier.pt",
+    "config.json",
+    "merges.txt",
+    "model.safetensors",
+    "preprocessor_config.json",
+    "special_tokens_map.json",
+    "tokenizer_config.json",
+    "tokenizer.json",
+    "vocab.json",
+]
+
+
+def weights_cached(cache_dir: str) -> bool:
+    for f in REQUIRED_FILES:
+        if not os.path.isfile(os.path.join(cache_dir, f)):
+            return False
+    return True
+
+
+def clear_cache(cache_dir: str):
+    print("LOAD:     Clearing corrupted cache...")
+    shutil.rmtree(cache_dir, ignore_errors=True)
+    os.makedirs(cache_dir, exist_ok=True)
+    print("DONE:     Created fresh cache.")
 
 
 @router.on_event('startup')
@@ -39,25 +67,22 @@ def load_model():
     api = wandb.Api()
     print("DONE:     Logged into W&B.")
 
-    # Retrieve cache directory for model weights (or make if first time)
-    cache_dir = os.getenv('MODEL_CACHE_DIR', '/tmp/vlmodel_cache')
-    os.makedirs(cache_dir, exist_ok=True)
-
     artifact_root = os.environ['WANDB_TEAM'] + '/' + os.environ['WANDB_PROJECT'] + '/'
-    artifact_model_label = 'clip_20251128_225047'  # TODO: make dynamic
+    artifact_model_label = 'vilt_20251206_145815'  # TODO: make dynamic
     artifact_model_version = 'v0'
     artifact_name = artifact_root + artifact_model_label + ':' + artifact_model_version
-    artifact_cache = artifact_model_label + '_' + artifact_model_version
+
+    # Retrieve cache directory for model weights (or make if first time)
+    cache_dir = os.getenv('MODEL_CACHE_DIR', '/app/vlmodel_cache')
+    os.makedirs(cache_dir, exist_ok=True)
 
     # Download artifact from W&B into persistent cache if not already cached
-    artifact_dir = os.path.join(cache_dir, artifact_cache)
-    if not os.path.exists(artifact_dir):
+    if not weights_cached(cache_dir):
+        clear_cache(cache_dir)
         print("LOAD:     Downloading model weights from W&B...")
         artifact = api.artifact(artifact_name)
-        artifact.download(root=artifact_dir)
+        artifact.download(root=cache_dir)
         print("DONE:     Model weights downloaded.")
-    else:
-        print("DONE:     Model weights already cached!")
 
     # Pull artifact metadata
     artifact = api.artifact(artifact_name)
@@ -74,11 +99,11 @@ def load_model():
 
     # Load model weights from saved artifact
     print(f"LOAD:     Loading weights into {model_id} model...")
-    model.model = model.model.from_pretrained(artifact_dir)
+    model.model = model.model.from_pretrained(cache_dir)
     print(f"LOAD:     Loading weights into {model_id} processor...")
-    model.processor = model.processor.from_pretrained(artifact_dir)
+    model.processor = model.processor.from_pretrained(cache_dir)
     print("LOAD:     Loading weights into classification head...")
-    model.classifier.load_state_dict(torch.load(f'{artifact_dir}/classifier.pt', map_location=torch.device(device)))
+    model.classifier.load_state_dict(torch.load(f'{cache_dir}/classifier.pt', map_location=torch.device(device)))
     print("DONE:     Model is served.")
 
     # Set model to eval mode
