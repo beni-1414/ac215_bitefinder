@@ -1,7 +1,7 @@
 import pulumi
 import pulumi_kubernetes as k8s
 
-artifact_model_label = "clip_20251128_225047"
+artifact_model_label = "vilt_20251206_145815"
 artifact_model_version = "v0"
 
 

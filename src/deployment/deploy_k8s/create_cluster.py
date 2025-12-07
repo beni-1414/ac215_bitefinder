@@ -9,7 +9,7 @@ base_config = pulumi.Config()
 service_account_email = pulumi.Config("security").get("gcp_service_account_email")
 ksa_service_account_email = pulumi.Config("security").get("gcp_ksa_service_account_email")
 initial_node_count = 1
-machine_type = "n2d-standard-2"
+machine_type = "e2-standard-4"
 machine_disk_size = 50
 
 
