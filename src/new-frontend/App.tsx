@@ -2,11 +2,16 @@ import React, { useState, useRef } from 'react';
 import Header from './components/Header';
 import UploadSection from './components/UploadSection';
 import AnalysisResult from './components/AnalysisResult';
+import PreventionGuide from './pages/PreventionGuide';
+import AboutPage from './pages/AboutPage';
+import SeasonalBugCalendar from './pages/SeasonalBugCalendar';
+import BugEducation from './pages/BugEducation';
 import { evaluateBite, askRag, extractAdvice } from './services/dataService';
 import { AppView, BiteAnalysis, ChatMessage } from './types';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>(AppView.HOME);
+  const [previousView, setPreviousView] = useState<AppView>(AppView.HOME);
   const [analysis, setAnalysis] = useState<BiteAnalysis | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string>('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -195,9 +200,18 @@ const App: React.FC = () => {
     setRemainingOptions([]);
   };
 
+  const handleNavigate = (newView: AppView) => {
+    if (newView === AppView.HOME) {
+      resetApp();
+    } else {
+      setPreviousView(view);
+      setView(newView);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-earth-50 flex flex-col font-sans">
-      <Header />
+      <Header onNavigate={handleNavigate} />
 
       <main className="flex-grow p-4 md:p-8">
         {error && (
@@ -231,42 +245,35 @@ const App: React.FC = () => {
         )}
 
         {view === AppView.RESULT && analysis && (
-          <div className="max-w-6xl mx-auto mt-8">
-            {/* Top-left Start Over button */}
-            <button
-              onClick={resetApp}
-              className="mb-4 flex items-center text-earth-600 hover:text-forest-700 transition-colors font-medium"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-                className="w-4 h-4 mr-1"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
-                />
-              </svg>
-              Start Over
-            </button>
-
-            <AnalysisResult
-              analysis={analysis}
-              uploadedImage={uploadedImage}
-              messages={messages}
-              onSendMessage={handleSendMessage}
-              isChatLoading={isChatLoading}
-              showSuggestions={showSuggestions}
-              suggestions={remainingOptions}
-              onSuggestionClick={handleSendMessage}
-            />
-          </div>
+          <AnalysisResult
+            analysis={analysis}
+            uploadedImage={uploadedImage}
+            onReset={resetApp}
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            isChatLoading={isChatLoading}
+            showSuggestions={showSuggestions}
+            suggestions={remainingOptions}
+            onSuggestionClick={handleSendMessage}
+            onNavigateToGuide={() => setView(AppView.PREVENTION_GUIDE)}
+          />
         )}
 
+        {view === AppView.PREVENTION_GUIDE && (
+          <PreventionGuide onBack={() => setView(previousView === AppView.RESULT ? AppView.RESULT : AppView.HOME)} />
+        )}
+
+        {view === AppView.SEASONAL_CALENDAR && (
+          <SeasonalBugCalendar onBack={() => setView(previousView === AppView.RESULT ? AppView.RESULT : AppView.HOME)} />
+        )}
+
+        {view === AppView.BUG_EDUCATION && (
+          <BugEducation onBack={() => setView(previousView === AppView.RESULT ? AppView.RESULT : AppView.HOME)} />
+        )}
+
+        {view === AppView.ABOUT && (
+          <AboutPage onBack={() => setView(previousView === AppView.RESULT ? AppView.RESULT : AppView.HOME)} />
+        )}
       </main>
 
       <footer className="bg-earth-200 text-earth-800 py-6 mt-auto">
