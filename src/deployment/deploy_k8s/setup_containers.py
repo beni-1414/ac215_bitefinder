@@ -20,7 +20,7 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
     # vlmodel_tag = images_stack.get_output("vlmodel-tags").apply(
     #     lambda tags: tags[0]
     # )
-    vlmodel_tag = base_tag + "vlmodel@sha256:b8d498947034ea1fc00da8db4fb65759863839ccfaf263b714d4059d1bed5393"  # "vlmodel:28112025"
+    vlmodel_tag = base_tag + "vlmodel@sha256:f25f8a9542934e50d80a22daa71f0f1c48dbede14dd3de8cdc20bb5df78ec6a0"  # "vlmodel:28112025"
     ragmodel_tag = images_stack.get_output("ragmodel-tags").apply(lambda tags: tags[0])
     input_evaluation_tag = images_stack.get_output("input-evaluation-tags").apply(lambda tags: tags[0])
 

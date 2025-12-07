@@ -14,5 +14,5 @@ STEPS TO START DEBUGGING POD:
 STEPS TO DELETE PVC:
 1. Get the PVC name by running `kubectl get pvc -n bitefinder-namespace`.
 2. Run `kubectl delete pvc <pvc_name> -n bitefinder-namespace`.
-3. If this command is hanging, in another terminal check PVC status try running `kubectl get pvc vlmodel-cache-pvc -n bitefinder-namespace -o wide`. If the status is Terminating, it is likely has a finalizer blocking deletion, so run `kubectl patch pvc vlmodel-cache-pvc -n bitefinder-namespace -p '{"metadata":{"finalizers": []}}' --type=merge` to safely remove it. The `kubectl delete pvc...` command should immediately finish now.
+3. If this command is hanging, in another terminal check PVC status try running `kubectl get pvc vlmodel-pvc -n bitefinder-namespace -o wide`. If the status is Terminating, it is likely has a finalizer blocking deletion, so run `kubectl patch pvc vlmodel-pvc -n bitefinder-namespace -p '{"metadata":{"finalizers": []}}' --type=merge` to safely remove it. The `kubectl delete pvc...` command should immediately finish now.
 4. While the PVC is now deleted, some of the pods may still be referencing the PVC name, so the workaround to this is to simply change the PVC name: change `"vlmodel-pvc"` in `setup_containers.py` and then rerun `pulumi up --stack dev`.
