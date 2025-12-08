@@ -213,3 +213,4 @@ tmp/
 artifacts/
 *_cache/
 env.dev
+env_training.dev

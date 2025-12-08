@@ -7,7 +7,7 @@ set -e
 echo "🚀 Submitting Vertex AI training job..."
 
 # Source environment variables
-source ../../../env.dev
+source ../../../env_training.dev
 
 export JOB_ID=job_$(date +%Y%m%d_%H%M%S)
 
