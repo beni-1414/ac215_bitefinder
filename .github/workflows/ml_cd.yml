@@ -2,11 +2,11 @@ name: Auto-Deploy VL Model
 
 on:
   schedule:
-    - cron: "*/5 * * * *"   # every 5 minutes
-  workflow_dispatch: {}      # manual trigger
+    - cron: "*/5 * * * *"   # Every 5 minutes
+  workflow_dispatch:        # Manual trigger
 
 jobs:
-  check-and-deploy:
+  deploy-vlmodel:
     runs-on: ubuntu-latest
 
     permissions:
@@ -17,12 +17,13 @@ jobs:
       GCS_BUCKET: bitefinder-data
       BEST_MODEL_FILE: best_model.txt
       PULUMI_CONFIG_KEY: artifact_model_label
+      DEPLOY_DIR: src/deployment/deploy_k8s
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
+      - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -32,53 +33,28 @@ jobs:
         with:
           project_id: ${{ env.GCP_PROJECT }}
 
-      - name: Install Pulumi
-        uses: pulumi/actions@v4
-
-      - name: Download best_model.txt from GCS
+      - name: Download best_model.txt
         run: |
-          gsutil cp gs://$GCS_BUCKET/$BEST_MODEL_FILE current_best_model.txt
+          echo "Downloading best_model.txt..."
+          gsutil cp gs://$GCS_BUCKET/$BEST_MODEL_FILE $GITHUB_WORKSPACE/current_best_model.txt
 
-      - name: Login to Pulumi (GCS backend)
-        working-directory: src/deployment/deploy_k8s
+      - name: Build Deployment Container
         run: |
-          pulumi login gs://bitefinder-474614-pulumi-state-bucket
+          cd $GITHUB_WORKSPACE/$DEPLOY_DIR
+          docker build -t bitefinder-deployment -f Dockerfile .
 
-      - name: Get current Pulumi artifact_model_label
-        id: pulumi_config
-        working-directory: src/deployment/deploy_k8s
+      - name: Run Deploy Container
         run: |
-          CURRENT_LABEL=$(pulumi config get $PULUMI_CONFIG_KEY --stack dev || echo "none")
-          echo "current_label=$CURRENT_LABEL" >> $GITHUB_OUTPUT
-
-      - name: Compare artifact values
-        id: compare
-        run: |
-          NEW_LABEL=$(cat current_best_model.txt)
-          CURRENT_LABEL="${{ steps.pulumi_config.outputs.current_label }}"
-
-          echo "New best_model: $NEW_LABEL"
-          echo "Current Pulumi label: $CURRENT_LABEL"
-
-          if [ "$NEW_LABEL" = "$CURRENT_LABEL" ]; then
-            echo "match=true" >> $GITHUB_OUTPUT
-          else
-            echo "match=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Stop if unchanged
-        if: steps.compare.outputs.match == 'true'
-        run: |
-          echo "No changes detected — exiting."
-          exit 0
-
-      - name: Update Pulumi config with new artifact label
-        working-directory: src/deployment/deploy_k8s
-        run: |
-          NEW_LABEL=$(cat ../../../current_best_model.txt)
-          pulumi config set $PULUMI_CONFIG_KEY "$NEW_LABEL" --stack dev
-
-      - name: Run Pulumi up to re-deploy
-        working-directory: src/deployment/deploy_k8s
-        run: |
-          pulumi up --stack dev --yes
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ github.workspace }}/current_best_model.txt":/workspace/current_best_model.txt \
+            -v "${{ github.workspace }}/$DEPLOY_DIR/docker_config.json":/root/.docker/config.json \
+            -v "${{ github.workspace }}/$DEPLOY_DIR/pulumi-plugins":/root/.pulumi/plugins \
+            --mount type=bind,source=$GOOGLE_APPLICATION_CREDENTIALS,target=/secrets/deployment.json \
+            -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/deployment.json \
+            -e USE_GKE_GCLOUD_AUTH_PLUGIN=True \
+            -e GCP_PROJECT=${{ env.GCP_PROJECT }} \
+            -e GCP_REGION=us-central1 \
+            -e GCP_ZONE=us-central1-a \
+            -v $GITHUB_WORKSPACE:/workspace \
+            bitefinder-deployment /app/cd-vlmodel.sh
