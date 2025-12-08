@@ -40,9 +40,11 @@ else
     -v "$SSH_DIR/.ssh":/home/app/.ssh:ro \
     -v "$(pwd)/docker_config.json":/root/.docker/config.json \
     -v "$(pwd)/pulumi-plugins":/root/.pulumi/plugins \
-    -v "$BASE_DIR/../api-service":/api-service \
-    -v "$BASE_DIR/../frontend-react":/frontend-react \
-    -v "$BASE_DIR/../vector-db":/vector-db \
+    -v "$BASE_DIR/../new-frontend":/new-frontend \
+    -v "$BASE_DIR/../orchestrator":/orchestrator \
+    -v "$BASE_DIR/../ragmodel":/ragmodel \
+    -v "$BASE_DIR/../vlmodel":/vlmodel \
+    -v "$BASE_DIR/../input_evaluation":/input_evaluation \
     -e GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS \
     -e USE_GKE_GCLOUD_AUTH_PLUGIN=True \
     -e GCP_PROJECT=$GCP_PROJECT \

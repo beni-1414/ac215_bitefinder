@@ -5,6 +5,9 @@ from api.schemas import ImageEvalJSONRequest, ImageEvalResponse, ImageMetrics
 from api.services.gcs_io import read_bytes_gcs
 import base64
 from api.services.image_quality import compute_metrics, decide
+from pillow_heif import register_heif_opener
+
+register_heif_opener()  # Enables HEIC decoding
 
 router = APIRouter(prefix="/v1/evaluate", tags=["evaluate"])
 

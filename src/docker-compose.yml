@@ -55,10 +55,12 @@ services:
       WANDB_TEAM: "bitefinder"
       WANDB_PROJECT: "bitefinder-vl"
       MODEL_CACHE_DIR: "/app/vlmodel_cache"
+      ARTIFACT_MODEL_LABEL: "clip_20251128_225047"
+      ARTIFACT_MODEL_VERSION: "v0"
     volumes:
       - ../../secrets:/secrets:ro
-      - ./vlmodel_cache:/app/vlmodel_cache # UNCOMMENT FOR DEVELOPMENT
-      # - vlmodel_cache:/app/vlmodel_cache # UNCOMMENT FOR DEPLOYMENT
+      - ./vlmodel_cache:/app/vlmodel_cache
+      # - vlmodel_cache:/app/vlmodel_cache
 
   frontend:
     image: src-frontend:latest
@@ -79,6 +81,5 @@ services:
     depends_on:
       - orchestrator
 
-# UNCOMMENT FOR DEPLOYMENT
 # volumes:
 #   vlmodel_cache:

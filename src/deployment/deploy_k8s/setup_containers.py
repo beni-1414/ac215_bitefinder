@@ -1,6 +1,9 @@
 import pulumi
 import pulumi_kubernetes as k8s
 
+artifact_model_label = "vilt_20251206_145815"
+artifact_model_version = "v0"
+
 
 def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
     # Get image references from deploy_images stack
@@ -10,17 +13,28 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
     # Get the image tags (these are arrays, so we take the first element)
     # NOTE: adjust these output names to match your deploy-images stack
     base_tag = "us-east1-docker.pkg.dev/bitefinder-474614/bitefinder-images/"
-    frontend_tag = base_tag + "frontend:latest"
-    orchestrator_tag = base_tag + "orchestrator:latest"
-    vlmodel_tag = base_tag + "bitefinder-vlmodel:latest"
-    ragmodel_tag = base_tag + "ragmodel:latest"
-    input_evaluation_tag = base_tag + "input-evaluation:latest"
+    images_stack = pulumi.StackReference("organization/deploy-images/dev")
+
+    frontend_tag = images_stack.get_output("frontend-tags").apply(lambda tags: tags[0])
+    orchestrator_tag = images_stack.get_output("orchestrator-tags").apply(lambda tags: tags[0])
+    # vlmodel_tag = images_stack.get_output("vlmodel-tags").apply(
+    #     lambda tags: tags[0]
+    # )
+    vlmodel_tag = base_tag + "vlmodel@sha256:f25f8a9542934e50d80a22daa71f0f1c48dbede14dd3de8cdc20bb5df78ec6a0"  # "vlmodel:28112025"
+    ragmodel_tag = images_stack.get_output("ragmodel-tags").apply(lambda tags: tags[0])
+    input_evaluation_tag = images_stack.get_output("input-evaluation-tags").apply(lambda tags: tags[0])
+
+    # frontend_tag = base_tag + "frontend:latest"
+    # orchestrator_tag = base_tag + "orchestrator:latest"
+    # vlmodel_tag = base_tag + "bitefinder-vlmodel:latest"
+    # ragmodel_tag = base_tag + "ragmodel:latest"
+    # input_evaluation_tag = base_tag + "input-evaluation:latest"
 
     # General persistent storage for application data (used for VL model cache, 10Gi)
-    vlmodel_cache_pvc = k8s.core.v1.PersistentVolumeClaim(
-        "vlmodel-cache-pvc",
+    vlmodel_pvc = k8s.core.v1.PersistentVolumeClaim(
+        "vlmodel-pvc",
         metadata=k8s.meta.v1.ObjectMetaArgs(
-            name="vlmodel-cache-pvc",
+            name="vlmodel-pvc",
             namespace=namespace.metadata.name,
         ),
         spec=k8s.core.v1.PersistentVolumeClaimSpecArgs(
@@ -33,7 +47,7 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
     )
 
     # --- Frontend Deployment ---
-    # Creates pods running the frontend container on port 3000
+    # Serves the static Vite build via nginx on port 80
     frontend_deployment = k8s.apps.v1.Deployment(
         "frontend",
         metadata=k8s.meta.v1.ObjectMetaArgs(
@@ -56,25 +70,9 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                             image_pull_policy="IfNotPresent",
                             ports=[
                                 k8s.core.v1.ContainerPortArgs(
-                                    container_port=3000,
+                                    container_port=80,
                                     protocol="TCP",
                                 )
-                            ],
-                            env=[
-                                # Match docker-compose: NEXT_PUBLIC_BASE_API_URL=http://orchestrator:9000
-                                k8s.core.v1.EnvVarArgs(
-                                    name="NEXT_PUBLIC_BASE_API_URL",
-                                    value="/orchestrator",
-                                ),
-                                k8s.core.v1.EnvVarArgs(
-                                    name="PORT",
-                                    value="3000",
-                                ),
-                                # CHOKIDAR_USEPOLLING is mainly for dev; keep for parity if desired
-                                k8s.core.v1.EnvVarArgs(
-                                    name="CHOKIDAR_USEPOLLING",
-                                    value="true",
-                                ),
                             ],
                             resources=k8s.core.v1.ResourceRequirementsArgs(
                                 requests={"cpu": "250m", "memory": "2Gi"},
@@ -98,8 +96,8 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
             type="ClusterIP",
             ports=[
                 k8s.core.v1.ServicePortArgs(
-                    port=3000,
-                    target_port=3000,
+                    port=80,
+                    target_port=80,
                     protocol="TCP",
                 )
             ],
@@ -136,10 +134,6 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                                 )
                             ],
                             env=[
-                                k8s.core.v1.EnvVarArgs(
-                                    name="GOOGLE_APPLICATION_CREDENTIALS",
-                                    value="/secrets/bitefinder-service-account.json",
-                                ),
                                 k8s.core.v1.EnvVarArgs(
                                     name="GCP_PROJECT",
                                     value=project,
@@ -198,12 +192,15 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                 ),
                 spec=k8s.core.v1.PodSpecArgs(
                     service_account_name=ksa_name,
+                    security_context=k8s.core.v1.PodSecurityContextArgs(
+                        fs_group=1000  # Ensure the mounted PVC is writable by the container user app (UID 1000)
+                    ),
                     volumes=[
                         k8s.core.v1.VolumeArgs(
                             name="vlmodel-cache",
                             persistent_volume_claim=(
                                 k8s.core.v1.PersistentVolumeClaimVolumeSourceArgs(
-                                    claim_name=vlmodel_cache_pvc.metadata.name,
+                                    claim_name=vlmodel_pvc.metadata.name,
                                 )
                             ),
                         )
@@ -219,10 +216,6 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                                 )
                             ],
                             env=[
-                                k8s.core.v1.EnvVarArgs(
-                                    name="GOOGLE_APPLICATION_CREDENTIALS",
-                                    value="/secrets/bitefinder-service-account.json",
-                                ),
                                 k8s.core.v1.EnvVarArgs(
                                     name="GCP_PROJECT",
                                     value=project,
@@ -243,6 +236,14 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                                     name="MODEL_CACHE_DIR",
                                     value="/app/vlmodel_cache",
                                 ),
+                                k8s.core.v1.EnvVarArgs(
+                                    name="ARTIFACT_MODEL_LABEL",
+                                    value=artifact_model_label,
+                                ),
+                                k8s.core.v1.EnvVarArgs(
+                                    name="ARTIFACT_MODEL_VERSION",
+                                    value=artifact_model_version,
+                                ),
                             ],
                             volume_mounts=[
                                 k8s.core.v1.VolumeMountArgs(
@@ -259,7 +260,7 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                 ),
             ),
         ),
-        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace, vlmodel_cache_pvc]),
+        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace, vlmodel_pvc]),
     )
 
     vlmodel_service = k8s.core.v1.Service(
@@ -308,12 +309,6 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                                     container_port=9000,
                                     protocol="TCP",
                                 )
-                            ],
-                            env=[
-                                k8s.core.v1.EnvVarArgs(
-                                    name="GOOGLE_APPLICATION_CREDENTIALS",
-                                    value="/secrets/bitefinder-service-account.json",
-                                ),
                             ],
                             resources=k8s.core.v1.ResourceRequirementsArgs(
                                 requests={"cpu": "250m", "memory": "512Mi"},
