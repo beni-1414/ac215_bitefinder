@@ -374,6 +374,7 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                                     name="RAG_MODEL_URL",
                                     value="http://ragmodel:9000",
                                 ),
+                                k8s.core.v1.EnvVarArgs(name="GCP_PROJECT", value="bitefinder-474614"),
                                 k8s.core.v1.EnvVarArgs(
                                     name="VL_MODEL_URL",
                                     value="http://vlmodel:9000",
