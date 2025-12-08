@@ -6,7 +6,7 @@ import PreventionGuide from './pages/PreventionGuide';
 import AboutPage from './pages/AboutPage';
 import SeasonalBugCalendar from './pages/SeasonalBugCalendar';
 import BugEducation from './pages/BugEducation';
-import { evaluateBite, askRag, extractAdvice } from './services/dataService';
+import { evaluateBite, askRag, extractAdvice, clearRagSession } from './services/dataService';
 import { AppView, BiteAnalysis, ChatMessage } from './types';
 
 const CHAT_STORAGE_KEY = 'bitefinder_chat_state';
@@ -261,11 +261,17 @@ const App: React.FC = () => {
 
   const handleNavigate = (newView: AppView) => {
     if (newView === AppView.HOME) {
-      resetApp();
-    } else {
-      setPreviousView(view);
-      setView(newView);
+      if (analysis) {
+        // Keep current session and return to results/chat instead of clearing state
+        setView(AppView.RESULT);
+      } else {
+        resetApp();
+      }
+      return;
     }
+
+    setPreviousView(view);
+    setView(newView);
   };
 
   return (
@@ -314,7 +320,7 @@ const App: React.FC = () => {
             showSuggestions={showSuggestions}
             suggestions={remainingOptions}
             onSuggestionClick={handleSendMessage}
-            onNavigateToGuide={() => setView(AppView.PREVENTION_GUIDE)}
+            onNavigateToGuide={() => handleNavigate(AppView.PREVENTION_GUIDE)}
           />
         )}
 
