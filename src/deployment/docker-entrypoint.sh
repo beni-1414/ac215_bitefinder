@@ -10,7 +10,7 @@ echo "UV version: $(uv --version)"
 gcloud auth activate-service-account --key-file $GOOGLE_APPLICATION_CREDENTIALS
 gcloud config set project $GCP_PROJECT
 # login to artifact-registry
-gcloud auth configure-docker us-docker.pkg.dev --quiet
+gcloud auth configure-docker us-east1-docker.pkg.dev --quiet
 # Check if the bucket exists
 if ! gsutil ls -b $PULUMI_BUCKET >/dev/null 2>&1; then
     echo "Bucket does not exist. Creating..."

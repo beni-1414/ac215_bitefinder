@@ -89,13 +89,13 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onAnalyze, isAnalyzing })
         {/* Text Input */}
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-earth-800 mb-1">
-            Describe what happened
+            Tell us what you know and how you feel.
           </label>
           <textarea
             id="notes"
             rows={3}
             className="w-full rounded-md border-earth-300 shadow-sm focus:border-forest-500 focus:ring-forest-500 bg-earth-50 p-3 text-earth-900"
-            placeholder="e.g., Hiking near a creek in Oregon. Red itchy bump that feels warm..."
+            placeholder="e.g., Hiking by a stream when I felt a sting on my ankle. Now there's a red, itchy bump and some swelling..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
@@ -123,7 +123,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onAnalyze, isAnalyzing })
               Analyzing...
             </>
           ) : (
-            'Get Diagnosis'
+            'Identify Bug'
           )}
         </button>
       </div>

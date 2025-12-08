@@ -76,7 +76,7 @@ def setup_loadbalancer(namespace, k8s_provider, api_service, frontend_service, a
                         paths=[
                             # API service
                             k8s.networking.v1.HTTPIngressPathArgs(
-                                path="/orchestrator",
+                                path="/v1/orchestrator",
                                 path_type="Prefix",
                                 backend=k8s.networking.v1.IngressBackendArgs(
                                     service=k8s.networking.v1.IngressServiceBackendArgs(
@@ -87,12 +87,12 @@ def setup_loadbalancer(namespace, k8s_provider, api_service, frontend_service, a
                             ),
                             # Frontend
                             k8s.networking.v1.HTTPIngressPathArgs(
-                                path="/chat",
+                                path="/",
                                 path_type="Prefix",
                                 backend=k8s.networking.v1.IngressBackendArgs(
                                     service=k8s.networking.v1.IngressServiceBackendArgs(
                                         name=frontend_service.metadata["name"],
-                                        port=k8s.networking.v1.ServiceBackendPortArgs(number=3000),
+                                        port=k8s.networking.v1.ServiceBackendPortArgs(number=80),
                                     )
                                 ),
                             ),

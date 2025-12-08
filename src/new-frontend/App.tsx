@@ -2,11 +2,16 @@ import React, { useState, useRef } from 'react';
 import Header from './components/Header';
 import UploadSection from './components/UploadSection';
 import AnalysisResult from './components/AnalysisResult';
+import PreventionGuide from './pages/PreventionGuide';
+import AboutPage from './pages/AboutPage';
+import SeasonalBugCalendar from './pages/SeasonalBugCalendar';
+import BugEducation from './pages/BugEducation';
 import { evaluateBite, askRag, extractAdvice } from './services/dataService';
 import { AppView, BiteAnalysis, ChatMessage } from './types';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>(AppView.HOME);
+  const [previousView, setPreviousView] = useState<AppView>(AppView.HOME);
   const [analysis, setAnalysis] = useState<BiteAnalysis | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string>('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -57,7 +62,7 @@ const App: React.FC = () => {
       });
 
       if (evalResult.needs_fix) {
-        setError(evalResult.error || "For best results, tell us your symptoms and where you were when you got bit.");
+        setError(evalResult.error || "For best results, please describe your symptoms and where you were when you got bitten");
         setView(AppView.HOME);
         return;
       }
@@ -68,28 +73,27 @@ const App: React.FC = () => {
       const pred = passed?.prediction || "unknown";
       const conf = typeof passed?.confidence === "number" ? passed.confidence : 0;
 
-      // Create a BiteAnalysis object from backend response
+      const scientificNameMap: Record<string, string> = {
+        ants: 'Formicidae family',
+        bed_bugs: 'Cimex lectularius family',
+        chiggers: 'Trombiculidae family',
+        fleas: 'Siphonaptera family',
+        mosquitos: 'Culicidae family',
+        spiders: 'Araneae family',
+        ticks: 'Ixodida family',
+      };
+
+      const prettyName = pred
+        .replaceAll('_', ' ')
+        .replace(/s$/, '')
+        .replace(/^./, str => str.toUpperCase());
+
+
+
       const biteAnalysis: BiteAnalysis = {
-        bugName: pred.replaceAll('_', ' ').replace(/s$/, '').replace(/^./, str => str.toUpperCase()),
-        scientificName: `${pred.replaceAll('_', ' ')} family`,
-        description: `Based on the image and your description, this appears to be a ${pred.replaceAll('_', ' ').slice(0, -1)} bite with ${Math.round(conf * 100)}% confidence. These are common outdoor pests that can cause irritation.`,
-        dangerLevel: conf > 0.8 ? 'Moderate' : 'Low',
-        symptoms: [
-          'Redness and swelling at bite site',
-          'Itching or irritation',
-          'Small raised bump',
-        ],
-        treatmentTips: [
-          'Clean the area with soap and water',
-          'Apply ice to reduce swelling',
-          'Use anti-itch cream if needed',
-          'Avoid scratching to prevent infection',
-        ],
-        preventionTips: [
-          'Use insect repellent when outdoors',
-          'Wear long sleeves and pants in infested areas',
-          'Keep living areas clean and clutter-free',
-        ],
+        bugName: prettyName,
+        scientificName: scientificNameMap[pred] ?? prettyName,
+        description: `Based on the image and your description, this appears to be a ${prettyName.toLowerCase()} bite with ${Math.round(conf * 100)}% confidence. These are common outdoor pests that can cause irritation.`,
       };
 
       setAnalysis(biteAnalysis);
@@ -185,9 +189,18 @@ const App: React.FC = () => {
     setRemainingOptions([]);
   };
 
+  const handleNavigate = (newView: AppView) => {
+    if (newView === AppView.HOME) {
+      resetApp();
+    } else {
+      setPreviousView(view);
+      setView(newView);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-earth-50 flex flex-col font-sans">
-      <Header />
+      <Header onNavigate={handleNavigate} />
 
       <main className="flex-grow p-4 md:p-8">
         {error && (
@@ -199,9 +212,9 @@ const App: React.FC = () => {
         {view === AppView.HOME && (
           <div className="max-w-4xl mx-auto text-center space-y-6 mt-8">
             <div className="space-y-3">
-              <h2 className="text-4xl font-serif font-bold text-earth-900">Got Bitten?</h2>
+              <h2 className="text-4xl font-serif font-bold text-earth-900">What Bit You?</h2>
               <p className="text-lg text-earth-600">
-                Upload a photo and describe what happened. We'll identify it and help you treat it.
+                Show us your bug bite and describe the scene. We'll play detective and help you heal up!
               </p>
             </div>
             <UploadSection onAnalyze={handleAnalyze} isAnalyzing={false} />
@@ -231,7 +244,24 @@ const App: React.FC = () => {
             showSuggestions={showSuggestions}
             suggestions={remainingOptions}
             onSuggestionClick={handleSendMessage}
+            onNavigateToGuide={() => setView(AppView.PREVENTION_GUIDE)}
           />
+        )}
+
+        {view === AppView.PREVENTION_GUIDE && (
+          <PreventionGuide onBack={() => setView(previousView === AppView.RESULT ? AppView.RESULT : AppView.HOME)} />
+        )}
+
+        {view === AppView.SEASONAL_CALENDAR && (
+          <SeasonalBugCalendar onBack={() => setView(previousView === AppView.RESULT ? AppView.RESULT : AppView.HOME)} />
+        )}
+
+        {view === AppView.BUG_EDUCATION && (
+          <BugEducation onBack={() => setView(previousView === AppView.RESULT ? AppView.RESULT : AppView.HOME)} />
+        )}
+
+        {view === AppView.ABOUT && (
+          <AboutPage onBack={() => setView(previousView === AppView.RESULT ? AppView.RESULT : AppView.HOME)} />
         )}
       </main>
 

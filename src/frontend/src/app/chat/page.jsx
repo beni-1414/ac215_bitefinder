@@ -31,18 +31,14 @@ export default function ChatPage() {
 
 
   // Utility function to convert image file to base 64 string
-  function imageToBase64(file) {
-    return new Promise((resolve, reject) => {
+  async function imageToBase64(file) {
+    return await new Promise((resolve, reject) => {
       const reader = new FileReader();
-
       reader.onload = () => {
-        const result = reader.result;
-        const base64_str = result.split(",")[1];
-        resolve(base64_str);
+        const base64 = reader.result.split(",")[1];
+        resolve(base64);
       };
-
       reader.onerror = reject;
-
       reader.readAsDataURL(file);
     });
   }
@@ -123,18 +119,22 @@ export default function ChatPage() {
   // ----------------------
   const handleSend = async ({ message, image }) => {
     setLoading(true);
-    const imageURL = image ? URL.createObjectURL(image) : null;
-    addMessage("user", message || "[uploaded image]", imageURL);
 
-    // Convert image to base64
-    let image_base64 = null;
-    if (image) {
-      try {
-        image_base64 = await imageToBase64(image);
-      } catch (e) {
-        console.error("Error converting to base64:", e);
-      }
+    let imageURL = null;
+  let image_base64 = null;
+
+  if (image) {
+    try {
+      image_base64 = await imageToBase64(image);
+      const blob = await (await fetch(`data:${image.type};base64,${image_base64}`)).blob();
+      imageURL = URL.createObjectURL(blob);
+    } catch (err) {
+      console.error("Error reading image:", err);
+      addMessage("assistant", "Failed to process the image.");
     }
+  }
+
+  addMessage("user", message || "[uploaded image]", imageURL);
 
     if (hasPrediction) {
       try {
