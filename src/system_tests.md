@@ -29,7 +29,7 @@ For a failure in image:
 
 For all good:
 {
-  "image_gcs_uri": "gs://bitefinder-data/user-input/chiggers_legimage111.jpg",
+  "image_gcs_uri": "gs://bitefinder-data/images/testing/chiggers/chiggers_legimage111.jpg",
   "user_text": "I was bitten while I was sleeping at home I believe, the bite is itchy.",
   "overwrite_validation": false,
   "first_call": true,
