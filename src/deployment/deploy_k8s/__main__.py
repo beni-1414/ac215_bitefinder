@@ -11,7 +11,7 @@ gcp_config = pulumi.Config("gcp")
 project = gcp_config.get("project")
 region = "us-central1"
 app_name = gcp_config.get("app_name") or "bitefinder"
-setupSSL = False  # Test
+setupSSL = False
 
 # Create the required network setups
 network, subnet, router, nat = create_network(region, app_name)
