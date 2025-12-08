@@ -1,4 +1,4 @@
-name: Auto-Deploy VL Model on Artifact Change
+name: Auto-Deploy VL Model
 
 on:
   schedule:
@@ -70,7 +70,7 @@ jobs:
       - name: Update Pulumi config with new artifact label
         working-directory: src/deployment/deploy_k8s
         run: |
-          NEW_LABEL=$(cat ../../current_best_model.txt)
+          NEW_LABEL=$(cat ../../../current_best_model.txt)
           pulumi config set $PULUMI_CONFIG_KEY "$NEW_LABEL" --stack dev
 
       - name: Run Pulumi up to re-deploy
