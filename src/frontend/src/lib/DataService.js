@@ -55,3 +55,18 @@ export async function askRag(data) {
   }
   return res.json();
 }
+
+///
+export async function askRagAgent(data) {
+  const res = await fetch(`/api/v1/orchestrator/rag/agent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Server returned ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+///

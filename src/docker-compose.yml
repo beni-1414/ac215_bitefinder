@@ -14,6 +14,7 @@ services:
       VLMODEL_URL: "http://vlmodel:9000"
       INPUT_EVALUATION_URL: "http://input_evaluation:9000"
       GOOGLE_APPLICATION_CREDENTIALS: "/secrets/bitefinder-service-account.json"
+      GCP_PROJECT: "bitefinder-474614"
       ALLOW_ORIGINS: "http://localhost:3001" #for frontend dev server in environment for orchestrator
     volumes:
       - ../../secrets:/secrets:ro      # same as -v "$(pwd)"/$SECRETS_DIR:/secrets (read-only)
@@ -28,6 +29,9 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: "/secrets/bitefinder-service-account.json"
       GCP_PROJECT: 'bitefinder-474614'
       PINECONE_INDEX: bugbite-rag
+      PINECONE_API_KEY: "/secrets/pinecone_api_key.txt"  
+      PINECONE_CLOUD: aws              
+      PINECONE_REGION: us-east-1 
     volumes:
       - ../../secrets:/secrets:ro
 
@@ -57,8 +61,8 @@ services:
       MODEL_CACHE_DIR: "/app/vlmodel_cache"
     volumes:
       - ../../secrets:/secrets:ro
-      - ./vlmodel_cache:/app/vlmodel_cache # UNCOMMENT FOR DEVELOPMENT
-      # - vlmodel_cache:/app/vlmodel_cache # UNCOMMENT FOR DEPLOYMENT
+      #- ./vlmodel_cache:/app/vlmodel_cache # UNCOMMENT FOR DEVELOPMENT
+      #- vlmodel_cache:/app/vlmodel_cache # UNCOMMENT FOR DEPLOYMENT
 
   frontend:
     image: src-frontend:latest
@@ -80,5 +84,5 @@ services:
       - orchestrator
 
 # UNCOMMENT FOR DEPLOYMENT
-# volumes:
-#   vlmodel_cache:
+#volumes:
+#  vlmodel_cache:

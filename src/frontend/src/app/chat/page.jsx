@@ -3,7 +3,10 @@ import React, { useState } from "react";
 import ChatInput from "../../components/chat/ChatInput";
 import ChatMessage from "../../components/chat/ChatMessage";
 import QuestionSuggestions from "../../components/chat/QuestionSuggestions";
-import { evaluateBite, askRag } from "../../lib/DataService";
+///
+import { evaluateBite, askRag, askRagAgent } from "../../lib/DataService";
+///
+//import { evaluateBite, askRag } from "../../lib/DataService";
 import { Card, CardHeader, CardContent } from "../../components/ui/card";
 
 export default function ChatPage() {
@@ -90,7 +93,10 @@ export default function ChatPage() {
     const nextOptions = remainingOptions.filter((o) => o !== question);
 
     try {
-      const ragRes = await askRag({
+      //const ragRes = await askRag({
+      ///
+      const ragRes = await askRagAgent({
+      ///
         question,
         symptoms: lastUserMessage,
         bug_class: evalResRef.current.prediction || "unknown",
@@ -154,7 +160,10 @@ export default function ChatPage() {
         }
 
         // QUESTION IS RELEVANT → CALL RAG
-        const ragRes = await askRag({
+        //const ragRes = await askRag({
+        ///
+        const ragRes = await askRagAgent({
+        ///
           question: message,
           symptoms: lastUserMessage,
           bug_class: evalResRef.current?.prediction || "unknown",

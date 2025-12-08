@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-source ../../env.dev
+source ../../env_TEMPLATE.dev #source ../../env.dev
 IMAGE_NAME="bitefinder-rag"
 
 # Create Docker network if missing
@@ -18,5 +18,9 @@ docker run --rm --name $IMAGE_NAME -ti \
   -e GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS \
   -e DEV=1 \
   -e GCP_PROJECT=$GCP_PROJECT \
+  -e PINECONE_API_KEY="$PINECONE_API_KEY" \
+  -e PINECONE_INDEX="$PINECONE_INDEX" \
+  -e PINECONE_CLOUD="$PINECONE_CLOUD" \
+  -e PINECONE_REGION="$PINECONE_REGION" \
   --network bitefinder-network \
   $IMAGE_NAME

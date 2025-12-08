@@ -10,8 +10,8 @@ from api.schemas import VLPredictRequestGCS, VLPredictRequestBase64, VLPredictRe
 class ServiceError(RuntimeError):
     pass
 
-
-def post_input_eval_text(payload: Dict[str, Any], timeout: float = 15.0) -> Dict[str, Any]:
+#15.0 --> 60.0
+def post_input_eval_text(payload: Dict[str, Any], timeout: float = 60.0) -> Dict[str, Any]:
     url = f"{settings.INPUT_EVAL_URL}/v1/evaluate/text"
     with httpx.Client(timeout=timeout) as c:
         r = c.post(url, json=payload)
@@ -19,8 +19,8 @@ def post_input_eval_text(payload: Dict[str, Any], timeout: float = 15.0) -> Dict
         raise ServiceError(f"input-eval text error {r.status_code}: {r.text}")
     return r.json()
 
-
-def post_input_eval_image(payload: Dict[str, Any], timeout: float = 20.0) -> Dict[str, Any]:
+#20.0 --> 120.0
+def post_input_eval_image(payload: Dict[str, Any], timeout: float = 120.0) -> Dict[str, Any]:
     url = f"{settings.INPUT_EVAL_URL}/v1/evaluate/image"
     with httpx.Client(timeout=timeout) as c:
         r = c.post(url, json=payload)
@@ -28,8 +28,8 @@ def post_input_eval_image(payload: Dict[str, Any], timeout: float = 20.0) -> Dic
         raise ServiceError(f"input-eval image error {r.status_code}: {r.text}")
     return r.json()
 
-
-def post_vl_model(req: VLPredictRequestBase64 | VLPredictRequestGCS, timeout: float = 10.0) -> VLPredictResponse:
+#10.0 --> 100.0
+def post_vl_model(req: VLPredictRequestBase64 | VLPredictRequestGCS, timeout: float = 100.0) -> VLPredictResponse:
     """Call the VL model endpoint. Accepts a VLPredictRequestGCS and returns a VLPredictResponse."""
     url = f"{settings.VL_MODEL_URL}/vlmodel/predict"
     with httpx.Client(timeout=timeout) as c:
@@ -39,10 +39,12 @@ def post_vl_model(req: VLPredictRequestBase64 | VLPredictRequestGCS, timeout: fl
     return VLPredictResponse.model_validate(r.json())
 
 
-def post_rag_chat(req: RAGRequest, timeout: float = 10.0) -> RAGModelResponse:
+def post_rag_chat(req: RAGRequest, timeout: float = 100.0) -> RAGModelResponse:
     url = f"{settings.RAG_MODEL_URL}/rag/chat"
     with httpx.Client(timeout=timeout) as c:
-        payload = req.model_dump()
+        #payload = req.model_dump()
+        payload = req.model_dump(exclude_none=True)  # drop Nones
+
 
         # normalize confidence
         if payload.get("conf") is None:
@@ -59,3 +61,21 @@ def post_rag_chat(req: RAGRequest, timeout: float = 10.0) -> RAGModelResponse:
         raise ServiceError(f"rag-model error {r.status_code}: {r.text}")
 
     return RAGModelResponse.model_validate(r.json())
+
+###
+def post_rag_search_by_bug(payload: dict, timeout: float = 10.0) -> RAGModelWrapper:
+    url = f"{settings.RAG_MODEL_URL}/rag/search_by_bug"
+    with httpx.Client(timeout=timeout) as c:
+        r = c.post(url, json=payload)
+    if r.status_code >= 400:
+        raise ServiceError(f"rag-model search_by_bug error {r.status_code}: {r.text}")
+    return RAGModelWrapper.model_validate(r.json())
+
+def post_rag_search_by_symptom(payload: dict, timeout: float = 10.0) -> RAGModelWrapper:
+    url = f"{settings.RAG_MODEL_URL}/rag/search_by_symptom"
+    with httpx.Client(timeout=timeout) as c:
+        r = c.post(url, json=payload)
+    if r.status_code >= 400:
+        raise ServiceError(f"rag-model search_by_symptom error {r.status_code}: {r.text}")
+    return RAGModelWrapper.model_validate(r.json())
+###

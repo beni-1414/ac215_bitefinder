@@ -316,6 +316,8 @@ def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: 
     docs = results.get("documents", [])
     context = "\n".join(docs[0]) if docs and len(docs[0]) > 0 else ""
 
+    ####
+    '''
     # dynamically build a prompt that includes the user’s question
     # determine the task based on what the user clicked
     q_low = user_question.lower()
@@ -337,6 +339,17 @@ def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: 
     else:
         # fallback for free-text questions
         task = f"Answer the user question appropriately: {user_question}"
+    ###
+        '''
+    task = """
+    Determine intent from the user's words:
+    - If they ask about relief/treatment: give treatment guidance only.
+    - If they ask about prevention: give prevention guidance only.
+    - If they ask what the insect is/does/risks: describe the insect only.
+    - Otherwise: answer appropriately.
+    Do not mix tasks; stay within the inferred intent.
+    """.strip()
+
 
     # final enforced prompt
     prompt = f"""

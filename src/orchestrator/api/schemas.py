@@ -120,3 +120,11 @@ class OrchestratorEvaluateResponse(BaseModel):
     error: Optional[str] = None
     # For followup calls (evaluation)
     eval: Optional[dict] = None
+
+
+###
+class RAGModelWrapper(BaseModel):
+    status: str
+    payload: RAGModelPayload
+    latency_ms: Optional[int] = None
+###
