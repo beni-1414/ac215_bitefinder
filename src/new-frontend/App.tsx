@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import Header from './components/Header';
 import UploadSection from './components/UploadSection';
 import AnalysisResult from './components/AnalysisResult';
-import { evaluateBite, askRag, extractAdvice } from './services/dataService';
+import { evaluateBite, askRag, extractAdvice, clearRagSession } from './services/dataService';
 import { AppView, BiteAnalysis, ChatMessage } from './types';
 
 const App: React.FC = () => {
@@ -41,6 +41,7 @@ const App: React.FC = () => {
 
   // INITIAL ANALYSIS
   const handleAnalyze = async (imageBase64: string, notes: string) => {
+    clearRagSession();
     setView(AppView.ANALYZING);
     setUploadedImage(imageBase64);
     setError(null);
@@ -130,28 +131,28 @@ const App: React.FC = () => {
     setShowSuggestions(false);
 
     try {
-      // Check if it's a courtesy message or irrelevant question
-      const relevanceCheck = await evaluateBite({
-        user_text: text,
-        image_gcs_uri: null,
-        image_base64: null,
-        first_call: false,
-        history: [],
-      });
+      // // Check if it's a courtesy message or irrelevant question
+      // const relevanceCheck = await evaluateBite({
+      //   user_text: text,
+      //   image_gcs_uri: null,
+      //   image_base64: null,
+      //   first_call: false,
+      //   history: [],
+      // });
 
-      if (relevanceCheck.eval?.courtesy) {
-        addMessage('ranger', "You're welcome, partner! Let me know if you have other questions about the bite. Stay safe on the trail!");
-        setIsChatLoading(false);
-        return;
-      }
+      // if (relevanceCheck.eval?.courtesy) {
+      //   addMessage('ranger', "You're welcome, partner! Let me know if you have other questions about the bite. Stay safe on the trail!");
+      //   setIsChatLoading(false);
+      //   return;
+      // }
 
-      if (!relevanceCheck.eval?.question_relevant) {
-        const errorMsg = relevanceCheck.eval?.improve_message ||
-          "I can only answer questions about insect bites, symptoms, prevention, or treatment. Keep it trail-related!";
-        addMessage('ranger', errorMsg);
-        setIsChatLoading(false);
-        return;
-      }
+      // if (!relevanceCheck.eval?.question_relevant) {
+      //   const errorMsg = relevanceCheck.eval?.improve_message ||
+      //     "I can only answer questions about insect bites, symptoms, prevention, or treatment. Keep it trail-related!";
+      //   addMessage('ranger', errorMsg);
+      //   setIsChatLoading(false);
+      //   return;
+      // }
 
       // Question is relevant → call RAG
       const ragRes = await askRag({
@@ -193,6 +194,7 @@ const App: React.FC = () => {
     setHistory([]);
     setShowSuggestions(false);
     setRemainingOptions([]);
+    clearRagSession();
   };
 
   return (
