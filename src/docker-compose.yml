@@ -15,6 +15,7 @@ services:
       INPUT_EVALUATION_URL: "http://input_evaluation:9000"
       GOOGLE_APPLICATION_CREDENTIALS: "/secrets/bitefinder-service-account.json"
       ALLOW_ORIGINS: "http://localhost:3001" #for frontend dev server in environment for orchestrator
+      GCP_PROJECT: "bitefinder-474614"
     volumes:
       - ../../secrets:/secrets:ro      # same as -v "$(pwd)"/$SECRETS_DIR:/secrets (read-only)
 
