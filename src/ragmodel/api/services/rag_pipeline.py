@@ -84,16 +84,12 @@ def _get_semantic_chunker():
 # CHANGED: Use Vertex AI client instead of genai.embed_content
 def generate_query_embedding(query: str):
     kwargs = {"output_dimensionality": EMBEDDING_DIMENSION}
-    response = llm_client.models.embed_content(
-        model=EMBEDDING_MODEL, contents=query, config=types.EmbedContentConfig(**kwargs)
-    )
+    response = llm_client.models.embed_content(model=EMBEDDING_MODEL, contents=query, config=types.EmbedContentConfig(**kwargs))
     return response.embeddings[0].values
 
 
 # CHANGED: Use Vertex AI with batch processing
-def generate_text_embeddings(
-    chunks, dimensionality: int = 768, batch_size: int = 250, max_retries: int = 5, retry_delay: int = 5
-):
+def generate_text_embeddings(chunks, dimensionality: int = 768, batch_size: int = 250, max_retries: int = 5, retry_delay: int = 5):
     # Max batch size is 250 for Vertex AI
     all_embeddings = []
 
@@ -177,9 +173,7 @@ def chunk(method="char-split"):
         if method == "char-split":
             chunk_size = 350
             chunk_overlap = 20
-            text_splitter = CharacterTextSplitter(
-                chunk_size=chunk_size, chunk_overlap=chunk_overlap, separator="", strip_whitespace=False
-            )
+            text_splitter = CharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap, separator="", strip_whitespace=False)
             text_chunks = text_splitter.create_documents([input_text])
             text_chunks = [doc.page_content for doc in text_chunks]
             print("Number of chunks:", len(text_chunks))
@@ -312,7 +306,7 @@ def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: 
     )
 
     # normalize confidence and build context
-    conf_pct = _normalize_conf_to_percent(conf)
+    conf_pct = _normalize_conf_to_percent(conf)  # noqa: F841
     docs = results.get("documents", [])
     context = "\n".join(docs[0]) if docs and len(docs[0]) > 0 else ""
 
@@ -321,19 +315,11 @@ def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: 
     q_low = user_question.lower()
 
     if "relief" in q_low or "treatment" in q_low:
-        task = (
-            "Provide treatment and symptom-relief guidance ONLY. "
-            "Do NOT include prevention tips. "
-            "Do NOT describe the insect."
-        )
+        task = "Provide treatment and symptom-relief guidance ONLY. " "Do NOT include prevention tips. " "Do NOT describe the insect."
     elif "prevention" in q_low:
-        task = (
-            "Provide prevention guidance ONLY. " "Do NOT include treatment information. " "Do NOT describe the insect."
-        )
+        task = "Provide prevention guidance ONLY. " "Do NOT include treatment information. " "Do NOT describe the insect."
     elif "about" in q_low or "insect" in q_low:
-        task = (
-            "Describe the insect ONLY (appearance, behavior, risks). " "Do NOT include treatment or prevention advice."
-        )
+        task = "Describe the insect ONLY (appearance, behavior, risks). " "Do NOT include treatment or prevention advice."
     else:
         # fallback for free-text questions
         task = f"Answer the user question appropriately: {user_question}"
@@ -344,7 +330,6 @@ def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: 
 
     Detected insect: {bug_class}
     Symptoms: {symptoms}
-    Model confidence: {conf_pct:.1f}%
 
     Task: {task}
 
@@ -360,7 +345,7 @@ def chat(method="char-split", symptoms: str = "", conf: float = 0.0, bug_class: 
             f"User question: '{user_question}'.\n"
             f"Detected insect: {bug_class}\n"
             f"Symptoms: {symptoms}\n"
-            f"Model confidence: {conf_pct:.1f}%\n\n"
+            # f"Model confidence: {conf_pct:.1f}%\n\n"
             f"Task: {task}\n\n"
             "No RAG context was found. Provide the requested information based on general insect facts."
         )
