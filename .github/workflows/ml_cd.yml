@@ -39,6 +39,11 @@ jobs:
         run: |
           gsutil cp gs://$GCS_BUCKET/$BEST_MODEL_FILE current_best_model.txt
 
+      - name: Login to Pulumi (GCS backend)
+        working-directory: src/deployment/deploy_k8s
+        run: |
+          pulumi login gs://bitefinder-474614-pulumi-state-bucket
+
       - name: Get current Pulumi artifact_model_label
         id: pulumi_config
         working-directory: src/deployment/deploy_k8s
