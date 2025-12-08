@@ -145,10 +145,7 @@ def decide(metrics: IQAMetrics) -> Tuple[bool, str, str]:
             "There may be motion blur. Keep still for a second after tapping to focus.",
             "motion_blur_index",
         )
-    if (
-        metrics.exposure_hist_entropy < t.MIN_EXPOSURE_ENTROPY
-        or metrics.under_over_exposed_ratio > t.MAX_EXPOSURE_CLIP_RATIO
-    ):
+    if metrics.exposure_hist_entropy < t.MIN_EXPOSURE_ENTROPY or metrics.under_over_exposed_ratio > t.MAX_EXPOSURE_CLIP_RATIO:
         return (
             False,
             "Lighting is poor. Take the photo in bright, even light (near a window or shade).",

@@ -3,13 +3,13 @@ from pydantic import BaseModel, Field
 
 
 class Thresholds(BaseModel):
-    MIN_LAPLACIAN_VAR: float = Field(45.0)
-    MIN_EXPOSURE_ENTROPY: float = Field(3.0)
-    MAX_EXPOSURE_CLIP_RATIO: float = Field(0.30)
-    MAX_NOISE_SIGMA: float = Field(30.0)
-    MAX_BLOCKINESS: float = Field(0.15)
-    MAX_MOTION_BLUR: float = Field(0.60)
-    MIN_SKIN_AREA_RATIO: float = Field(0.15)
+    MIN_LAPLACIAN_VAR: float = Field(20.0)  # Was 45.0 - now accepts blurrier images
+    MIN_EXPOSURE_ENTROPY: float = Field(2.0)  # Was 3.0 - more lenient on lighting
+    MAX_EXPOSURE_CLIP_RATIO: float = Field(0.50)  # Was 0.30 - allows more over/under exposure
+    MAX_NOISE_SIGMA: float = Field(50.0)  # Was 30.0 - accepts noisier images
+    MAX_BLOCKINESS: float = Field(0.30)  # Was 0.15 - allows more compression
+    MAX_MOTION_BLUR: float = Field(1.0)  # Was 0.60 - more lenient on motion blur
+    MIN_SKIN_AREA_RATIO: float = Field(0.08)  # Was 0.15 - requires less skin visible
 
 
 class Settings(BaseModel):
@@ -24,13 +24,13 @@ class Settings(BaseModel):
     VERTEX_MODEL_NAME: str = os.getenv("VERTEX_MODEL_NAME", "gemini-2.5-flash")
 
     THRESHOLDS: Thresholds = Thresholds(
-        MIN_LAPLACIAN_VAR=float(os.getenv("MIN_LAPLACIAN_VAR", 45)),
-        MIN_EXPOSURE_ENTROPY=float(os.getenv("MIN_EXPOSURE_ENTROPY", 3.0)),
-        MAX_EXPOSURE_CLIP_RATIO=float(os.getenv("MAX_EXPOSURE_CLIP_RATIO", 0.30)),
-        MAX_NOISE_SIGMA=float(os.getenv("MAX_NOISE_SIGMA", 30)),
-        MAX_BLOCKINESS=float(os.getenv("MAX_BLOCKINESS", 0.15)),
-        MAX_MOTION_BLUR=float(os.getenv("MAX_MOTION_BLUR", 0.60)),
-        MIN_SKIN_AREA_RATIO=float(os.getenv("MIN_SKIN_AREA_RATIO", 0.15)),
+        MIN_LAPLACIAN_VAR=float(os.getenv("MIN_LAPLACIAN_VAR", 20)),
+        MIN_EXPOSURE_ENTROPY=float(os.getenv("MIN_EXPOSURE_ENTROPY", 2.0)),
+        MAX_EXPOSURE_CLIP_RATIO=float(os.getenv("MAX_EXPOSURE_CLIP_RATIO", 0.50)),
+        MAX_NOISE_SIGMA=float(os.getenv("MAX_NOISE_SIGMA", 50)),
+        MAX_BLOCKINESS=float(os.getenv("MAX_BLOCKINESS", 0.30)),
+        MAX_MOTION_BLUR=float(os.getenv("MAX_MOTION_BLUR", 1.0)),
+        MIN_SKIN_AREA_RATIO=float(os.getenv("MIN_SKIN_AREA_RATIO", 0.08)),
     )
 
 

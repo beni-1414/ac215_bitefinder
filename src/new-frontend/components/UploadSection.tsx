@@ -123,7 +123,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onAnalyze, isAnalyzing })
               Analyzing...
             </>
           ) : (
-            'Identify the Bug'
+            'Identify Bug'
           )}
         </button>
       </div>
