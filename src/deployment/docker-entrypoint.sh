@@ -26,5 +26,12 @@ pulumi login $PULUMI_BUCKET
 echo "Available Pulumi stacks in GCS:"
 gsutil ls $PULUMI_BUCKET/.pulumi/stacks/  || echo "No stacks found."
 
-# Run Bash for interactive mode
-/bin/bash
+args="$@"
+echo $args
+
+if [[ -z ${args} ]];
+then
+    /bin/bash
+else
+  /bin/bash $args
+fi

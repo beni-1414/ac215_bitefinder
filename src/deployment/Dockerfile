@@ -65,6 +65,8 @@ WORKDIR /app
 
 # Copy dependency files first for better layer caching
 COPY --chown=app:app pyproject.toml uv.lock* ./
+COPY --chown=app:app docker-entrypoint.sh /home/app/docker-entrypoint.sh
+COPY --chown=app:app deploy-k8s-update.sh /home/app/deploy-k8s-update.sh
 
 # Install Python dependencies
 RUN uv sync --frozen
