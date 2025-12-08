@@ -142,7 +142,7 @@ const BugEducation: React.FC<BugEducationProps> = ({ onBack }) => {
     {
       id: 'chiggers',
       name: 'Chiggers',
-      emoji: '🔴',
+      emoji: '🐛',
       scientific: 'Trombiculidae family',
       danger: 'Low',
       description: 'Tiny mite larvae that feed on skin cells, causing intense itching.',
@@ -297,7 +297,7 @@ const BugEducation: React.FC<BugEducationProps> = ({ onBack }) => {
         {/* Header */}
         <div className="bg-gradient-to-r from-forest-600 to-forest-800 rounded-xl shadow-xl p-8 mb-8 border-4 border-forest-900 text-white">
           <div className="flex items-center gap-4">
-            <div className="text-7xl">🐛</div>
+            <div className="text-7xl">🪲</div>
             <div>
               <h1 className="text-4xl font-serif font-bold mb-2">
                 Bug Education Center
@@ -441,7 +441,6 @@ const BugEducation: React.FC<BugEducationProps> = ({ onBack }) => {
 
         {!selectedBug && (
           <div className="bg-forest-50 rounded-xl p-12 text-center border-2 border-forest-200">
-            <div className="text-6xl mb-4">🐛</div>
             <h3 className="text-2xl font-serif font-bold text-earth-900 mb-2">
               Select a Bug to Learn More
             </h3>

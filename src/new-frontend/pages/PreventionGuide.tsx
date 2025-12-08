@@ -10,12 +10,12 @@ const PreventionGuide: React.FC<PreventionGuideProps> = ({ onBack }) => {
       {/* Back button */}
       <button
         onClick={onBack}
-        className="flex items-center text-earth-600 hover:text-forest-700 transition-colors font-medium mb-6"
+        className="flex items-center text-earth-600 hover:text-forest-700 transition-colors font-medium mb-6 text-lg"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 mr-1">
           <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
         </svg>
-        Back to Results
+        Back to Home
       </button>
 
       {/* Header */}
@@ -26,7 +26,7 @@ const PreventionGuide: React.FC<PreventionGuideProps> = ({ onBack }) => {
             <h1 className="text-4xl font-serif font-bold mb-2">
               Bite Prevention Guide
             </h1>
-            <p className="text-lg mb-2">
+            <p className="text-xl text-forest-200">
               Stay safe on the trail with Ranger Rick's proven tips
             </p>
           </div>

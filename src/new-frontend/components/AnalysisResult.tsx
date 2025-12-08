@@ -27,47 +27,9 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
   onSuggestionClick,
   onNavigateToGuide
 }) => {
-
-  const getDangerColor = (level: string) => {
-    switch (level) {
-      case 'Emergency':
-      case 'High': return 'bg-red-100 text-red-800 border-red-300';
-      case 'Moderate': return 'bg-amber-100 text-amber-800 border-amber-300';
-      default: return 'bg-green-100 text-green-800 border-green-300';
-    }
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-
-      {/* Left Column: Chat Interface - MAIN FOCUS */}
-      <div className="lg:col-span-2">
-        <button
-          onClick={onReset}
-          className="flex items-center text-earth-600 hover:text-forest-700 transition-colors font-medium mb-4"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 mr-1">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-          </svg>
-          Start Over
-        </button>
-
-        <div className="mb-4">
-          <h2 className="text-2xl font-serif font-bold text-earth-900">Ask Ranger Rick</h2>
-          <p className="text-sm text-earth-600">Get personalized advice about your {analysis.bugName} bite</p>
-        </div>
-
-        <ChatInterface
-          messages={messages}
-          onSendMessage={onSendMessage}
-          isLoading={isChatLoading}
-          showSuggestions={showSuggestions}
-          suggestions={suggestions}
-          onSuggestionClick={onSuggestionClick}
-        />
-      </div>
-
-      {/* Right Column: Simplified Result Card - SIDEBAR */}
+      {/* Left Column: Simplified Result Card - SIDEBAR */}
       <div className="lg:col-span-1">
         <div className="lg:sticky lg:top-24">
           <div className="mb-3">
@@ -91,13 +53,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
             </div>
 
             <div className="p-4">
-              {/* Danger Level Badge */}
-              <div className="mb-3">
-                <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${getDangerColor(analysis.dangerLevel)}`}>
-                  {analysis.dangerLevel} Risk
-                </span>
-              </div>
-
+              {/* Description */}
               <p className="text-base text-earth-800 leading-relaxed mb-4">
                 {analysis.description}
               </p>
@@ -149,6 +105,33 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Right Column: Chat Interface - MAIN FOCUS */}
+      <div className="lg:col-span-2">
+        <button
+          onClick={onReset}
+          className="flex items-center text-earth-600 hover:text-forest-700 transition-colors font-medium mb-4"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 mr-1">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+          </svg>
+          Start Over
+        </button>
+
+        <div className="mb-4">
+          <h2 className="text-2xl font-serif font-bold text-earth-900">Ask Ranger Rick</h2>
+          <p className="text-sm text-earth-600">Get personalized advice about your {analysis.bugName} bite</p>
+        </div>
+
+        <ChatInterface
+          messages={messages}
+          onSendMessage={onSendMessage}
+          isLoading={isChatLoading}
+          showSuggestions={showSuggestions}
+          suggestions={suggestions}
+          onSuggestionClick={onSuggestionClick}
+        />
       </div>
     </div>
   );

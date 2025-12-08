@@ -88,23 +88,12 @@ const App: React.FC = () => {
         .replace(/s$/, '')
         .replace(/^./, str => str.toUpperCase());
 
-      const baseDangerLevelMap: Record<string, 'Low' | 'Moderate' | 'High'> = {
-        ants: 'Low',
-        bed_bugs: 'Low',
-        chiggers: 'Low',
-        fleas: 'Low',
-        mosquitos: 'Moderate',   // disease risk (e.g., West Nile, dengue) [web:27][web:35][web:37]
-        spiders: 'Moderate',     // some medically important species [web:21][web:24][web:25]
-        ticks: 'High',           // Lyme and other serious diseases [web:26][web:29][web:32][web:34][web:40]
-      };
 
-      const dangerLevel = baseDangerLevelMap[pred] ?? 'Low';
 
       const biteAnalysis: BiteAnalysis = {
         bugName: prettyName,
         scientificName: scientificNameMap[pred] ?? prettyName,
         description: `Based on the image and your description, this appears to be a ${prettyName.toLowerCase()} bite with ${Math.round(conf * 100)}% confidence. These are common outdoor pests that can cause irritation.`,
-        dangerLevel,
       };
 
       setAnalysis(biteAnalysis);
@@ -225,7 +214,7 @@ const App: React.FC = () => {
             <div className="space-y-3">
               <h2 className="text-4xl font-serif font-bold text-earth-900">What Bit You?</h2>
               <p className="text-lg text-earth-600">
-                Upload a photo and describe the scene. We'll play detective and help you heal up!
+                Show us your bug bite and describe the scene. We'll play detective and help you heal up!
               </p>
             </div>
             <UploadSection onAnalyze={handleAnalyze} isAnalyzing={false} />

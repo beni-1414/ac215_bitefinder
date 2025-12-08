@@ -245,7 +245,6 @@ const SeasonalBugCalendar: React.FC<SeasonalBugCalendarProps> = ({ onBack }) => 
 
         {!selectedMonth && (
           <div className="bg-forest-50 rounded-xl p-12 text-center border-2 border-forest-200">
-            <div className="text-6xl mb-4">📅</div>
             <h3 className="text-2xl font-serif font-bold text-earth-900 mb-2">
               Select a Month
             </h3>

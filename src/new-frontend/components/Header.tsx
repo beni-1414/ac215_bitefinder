@@ -111,7 +111,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                 onClick={() => onNavigate(AppView.HOME)}
                 className="text-sm font-medium bg-forest-800 px-3 py-1 rounded-full text-forest-200 border border-forest-600 hover:bg-forest-700 transition-colors"
               >
-                🔍 Identify Bite
+                🔍 Identify Bug
               </button>
             </>
           )}
