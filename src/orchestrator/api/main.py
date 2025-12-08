@@ -37,8 +37,8 @@ async def healthz():
 from api.routes.orchestrator import router as orchestrator_router  # noqa: E402
 from api.routes.rag import router as rag_router  # noqa: E402
 
-# from api.routes.rag_agent import router as rag_agent_router  # noqa: E402
+from api.routes.rag_agent import router as rag_agent_router  # noqa: E402
 
 api.include_router(orchestrator_router)
 api.include_router(rag_router)
-# api.include_router(rag_agent_router)
+api.include_router(rag_agent_router)
