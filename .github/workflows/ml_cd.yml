@@ -17,7 +17,7 @@ jobs:
       GCS_BUCKET: bitefinder-data
       BEST_MODEL_FILE: best_model.txt
       PULUMI_CONFIG_KEY: artifact_model_label
-      DEPLOY_DIR: src/deployment/deploy_k8s
+      DEPLOY_DIR: src/deployment
 
     steps:
       - name: Checkout repo
