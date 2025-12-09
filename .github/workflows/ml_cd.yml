@@ -1,9 +1,9 @@
 name: Auto-Deploy VL Model
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
-  workflow_dispatch: {}
+  # schedule:
+  #   - cron: "*/5 * * * *" # Every 5 minutes
+  workflow_dispatch: {} # Manual trigger
 
 jobs:
   check-and-deploy:
@@ -14,8 +14,6 @@ jobs:
     env:
       GCP_PROJECT: bitefinder-474614
       GCS_BUCKET: bitefinder-data
-      BEST_MODEL_FILE: best_model.txt
-      PULUMI_CONFIG_KEY: artifact_model_label
 
     steps:
       - name: Check out repository code
@@ -58,4 +56,5 @@ jobs:
             -e GCP_ZONE=us-central1-a \
             -e GCP_REGION=us-central1 \
             -e PULUMI_BUCKET=gs://$GCP_PROJECT-pulumi-state-bucket \
-            bitefinder-deployment /bin/bash /deploy_k8s/deploy_vlmodel.sh
+            -w /deploy_k8s \
+            bitefinder-deployment ./deploy_vlmodel.sh
