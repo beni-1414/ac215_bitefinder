@@ -13,14 +13,15 @@ workerPoolSpecs:
       pythonModule: training.task
       args:
         - --save
+        - --deploy
         - --text_fname=texts_v2.json
         - --model=vilt
-        - --unfreeze_layers=4
-        - --batch_size=64
+        - --unfreeze_layers=1
+        - --batch_size=32
         - --dropout_prob=0.1
         - --lr=1e-4
         - --classifier_layers=1
-        - --epochs=10
+        - --epochs=2
         # - --sweep_config=sweep.yaml
       env:
         - name: GCS_BUCKET_URI

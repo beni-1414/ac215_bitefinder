@@ -5,6 +5,9 @@ import torch.nn.functional as F
 from tqdm import tqdm
 import wandb
 from training.utils_dataloader import collate_paired_fn, train_eval_split
+import os
+from google.cloud import storage
+
 
 '''
 Trainer: experiment handler for model training and evaluation with integrated W&B logging
@@ -19,6 +22,8 @@ Trainer: experiment handler for model training and evaluation with integrated W&
 - seed: random seed for reproducibility
 - verbose: whether to print training/evaluation progress
 - save: whether to save the model as a W&B artifact
+- save_dir: directory to save the model files
+- deploy: whether to deploy the saved model to GCS for continuous deployment
 '''
 
 
@@ -37,6 +42,7 @@ class Trainer:
         verbose=False,
         save=False,
         save_dir=None,
+        deploy=False,
     ):
         self.model = model
         self.model_id = model_id
@@ -47,6 +53,7 @@ class Trainer:
         self.num_epochs = num_epochs
         self.save = save
         self.save_dir = save_dir
+        self.deploy = deploy
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -81,6 +88,9 @@ class Trainer:
         train_acc = 0
         eval_loss = 0
         eval_acc = 0
+
+        # Min accuracy to meet deployment requirements
+        eval_acc_deploy_threshold = 0.8
 
         self.model.to(self.device)
         for epoch in range(self.num_epochs):
@@ -169,8 +179,9 @@ class Trainer:
                 'model_kwargs': model_kwargs,
                 'id_to_label': self.dataset.id_to_label,
             }
+            artifact_name = wandb.run.name  # Use W&B run name to identify artifact
             artifact = wandb.Artifact(
-                name=wandb.run.name,  # Use W&B run name to identify artifact
+                name=artifact_name,
                 type='model',
                 metadata=artifact_metadata,
             )
@@ -179,6 +190,23 @@ class Trainer:
             torch.save(self.model.classifier.state_dict(), self.save_dir + '/classifier.pt')  # Save classification head
             artifact.add_dir(self.save_dir)
             wandb.log_artifact(artifact)
+
+            # Deploy model only if validation accuracy threshold is met
+            if self.deploy and eval_acc >= eval_acc_deploy_threshold:
+                deploy_model(model_name=artifact_name)
+
+
+'''
+deploy_model: function to upload model artifact name to GCS for continuous model deployment
+'''
+
+
+def deploy_model(model_name):
+    bucket_name = os.environ['GCS_BUCKET_URI'].replace('gs://', '')
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob('best_model.txt')
+    blob.upload_from_string(model_name)
 
 
 '''
