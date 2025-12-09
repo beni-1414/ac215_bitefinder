@@ -1,10 +1,20 @@
 #!/bin/bash
 
+VENV_PATH="${VIRTUAL_ENV:-/home/app/.venv}"
+if [[ -f "${VENV_PATH}/bin/activate" ]]; then
+  # Ensure Pulumi uses the project virtualenv
+  source "${VENV_PATH}/bin/activate"
+  export PULUMI_PYTHON_CMD="${VENV_PATH}/bin/python"
+  echo "Using virtual environment at ${VENV_PATH}"
+else
+  echo "WARNING: Virtual environment not found at ${VENV_PATH}; falling back to system Python."
+fi
+
 echo "Container is running!!!"
 echo "Architecture: $(uname -m)"
-echo "Environment ready! Virtual environment activated."
 echo "Python version: $(python --version)"
 echo "UV version: $(uv --version)"
+echo "Python executable: $(which python)"
 
 # Authenticate gcloud using service account
 gcloud auth activate-service-account --key-file $GOOGLE_APPLICATION_CREDENTIALS
@@ -26,5 +36,12 @@ pulumi login $PULUMI_BUCKET
 echo "Available Pulumi stacks in GCS:"
 gsutil ls $PULUMI_BUCKET/.pulumi/stacks/  || echo "No stacks found."
 
-# Run Bash for interactive mode
-/bin/bash
+args="$@"
+echo $args
+
+if [[ -z ${args} ]];
+then
+    /bin/bash
+else
+  /bin/bash $args
+fi

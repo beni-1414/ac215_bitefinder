@@ -29,12 +29,44 @@ export interface RagRequest {
   symptoms: string;
   bug_class: string;
   conf: number;
+  session_id?: string;
 }
 
 export interface RagResponse {
   llm?: any;
+  session_id?: string;
   [key: string]: any;
 }
+
+const RAG_SESSION_STORAGE_KEY = "bitefinder_rag_session_id";
+
+const getStoredRagSessionId = (): string | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(RAG_SESSION_STORAGE_KEY);
+  } catch (err) {
+    console.warn("Unable to read RAG session ID from storage", err);
+    return null;
+  }
+};
+
+const persistRagSessionId = (sessionId: string) => {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(RAG_SESSION_STORAGE_KEY, sessionId);
+  } catch (err) {
+    console.warn("Unable to persist RAG session ID", err);
+  }
+};
+
+export const clearRagSession = () => {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(RAG_SESSION_STORAGE_KEY);
+  } catch (err) {
+    console.warn("Unable to clear RAG session ID", err);
+  }
+};
 
 /**
  * Calls the backend /evaluate endpoint
@@ -96,10 +128,16 @@ export async function evaluateBite(data: {
 export async function askRag(data: RagRequest): Promise<RagResponse> {
   console.log('🟢 Calling RAG with:', data);  // ← Added debugging
 
-  const res = await fetch(`/v1/orchestrator/rag`, {
+  const payload: RagRequest = { ...data };
+  const storedSessionId = getStoredRagSessionId();
+  if (storedSessionId) {
+    payload.session_id = storedSessionId;
+  }
+
+  const res = await fetch(`/v1/orchestrator/rag-agent`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
 
   console.log('🟢 RAG response status:', res.status);  // ← Added debugging
@@ -112,6 +150,10 @@ export async function askRag(data: RagRequest): Promise<RagResponse> {
 
   const result = await res.json();
   console.log('🟢 RAG response:', result);  // ← Added debugging
+
+  if (result?.session_id) {
+    persistRagSessionId(result.session_id);
+  }
 
   return result;
 }

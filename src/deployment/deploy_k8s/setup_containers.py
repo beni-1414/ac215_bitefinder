@@ -1,9 +1,12 @@
+import os
+
 import pulumi
 import pulumi_kubernetes as k8s
 
 config = pulumi.Config()
-artifact_model_label = config.require("artifact_model_label")
-artifact_model_version = "v0"
+# Allow stack config override, then env var override, then fallback default.
+artifact_model_label = config.get("artifact_model_label") or os.getenv("ARTIFACT_MODEL_LABEL", "clip_20251128_225047")
+artifact_model_version = config.get("artifact_model_version") or os.getenv("ARTIFACT_MODEL_VERSION", "latest")
 
 
 def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
@@ -13,8 +16,9 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
 
     # Get the image tags (these are arrays, so we take the first element)
     # NOTE: adjust these output names to match your deploy-images stack
+    stack_name = pulumi.Config("deploy-k8s").get("stackName") or "dev"
     base_tag = "us-east1-docker.pkg.dev/bitefinder-474614/bitefinder-images/"
-    images_stack = pulumi.StackReference("organization/deploy-images/dev")
+    images_stack = pulumi.StackReference(f"organization/deploy-images/{stack_name}")
 
     frontend_tag = images_stack.get_output("frontend-tags").apply(lambda tags: tags[0])
     orchestrator_tag = images_stack.get_output("orchestrator-tags").apply(lambda tags: tags[0])
@@ -76,8 +80,8 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                                 )
                             ],
                             resources=k8s.core.v1.ResourceRequirementsArgs(
-                                requests={"cpu": "250m", "memory": "2Gi"},
-                                limits={"cpu": "500m", "memory": "3Gi"},
+                                requests={"cpu": "500m", "memory": "4Gi"},
+                                limits={"cpu": "1", "memory": "8Gi"},
                             ),
                         ),
                     ],
@@ -184,6 +188,10 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
             namespace=namespace.metadata.name,
         ),
         spec=k8s.apps.v1.DeploymentSpecArgs(
+            replicas=1,
+            strategy=k8s.apps.v1.DeploymentStrategyArgs(
+                type="Recreate",  # 👈 kill old pods before starting new ones
+            ),
             selector=k8s.meta.v1.LabelSelectorArgs(
                 match_labels={"run": "vlmodel"},
             ),
@@ -378,6 +386,7 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                                     name="RAG_MODEL_URL",
                                     value="http://ragmodel:9000",
                                 ),
+                                k8s.core.v1.EnvVarArgs(name="GCP_PROJECT", value=project),
                                 k8s.core.v1.EnvVarArgs(
                                     name="VL_MODEL_URL",
                                     value="http://vlmodel:9000",

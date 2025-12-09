@@ -161,3 +161,6 @@ Since our data does not change ofter, we are not using a data versioning tool li
 ### Raw Data
 
 The raw image data used for bug bite classification is available here: https://www.kaggle.com/datasets/moonfallidk/bug-bite-images. The directory structure of this dataset is what is followed/expected by our trainer.
+
+## Continuous Deployment
+Push a commit to the main branch with the text `/deploy-app` to trigger a redeployment of the entire application. This will rebuild and redeploy all of the containers with the latest code. Workflow code is in `.github/workflows/cd.yml`.

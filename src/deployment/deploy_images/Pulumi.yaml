@@ -3,7 +3,8 @@ description: A Python program to build & deploye images to GCP
 runtime:
   name: python
   options:
-    toolchain: uv
+    # Use the prebuilt project virtualenv instead of creating a new one
+    virtualenv: /home/app/.venv
 config:
   pulumi:tags:
     value:
