@@ -7,4 +7,4 @@ config:
   deploy-k8s:setupSSL: "false"
   deploy-k8s:appName: bitefinder
   deploy-k8s:stackName: dev
-  deploy-k8s:artifact_model_label: vilt_20251206_145815
+  deploy-k8s:artifact_model_label: clip_20251128_225047
