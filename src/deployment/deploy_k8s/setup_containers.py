@@ -5,7 +5,7 @@ import pulumi_kubernetes as k8s
 
 config = pulumi.Config()
 # Allow stack config override, then env var override, then fallback default.
-artifact_model_label = config.get("artifact_model_label") or os.getenv("ARTIFACT_MODEL_LABEL", "vilt_20251206_145815")
+artifact_model_label = config.get("artifact_model_label") or os.getenv("ARTIFACT_MODEL_LABEL", "clip_20251128_225047")
 artifact_model_version = config.get("artifact_model_version") or os.getenv("ARTIFACT_MODEL_VERSION", "latest")
 
 
@@ -80,8 +80,8 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                                 )
                             ],
                             resources=k8s.core.v1.ResourceRequirementsArgs(
-                                requests={"cpu": "250m", "memory": "2Gi"},
-                                limits={"cpu": "500m", "memory": "3Gi"},
+                                requests={"cpu": "500m", "memory": "4Gi"},
+                                limits={"cpu": "1", "memory": "8Gi"},
                             ),
                         ),
                     ],
