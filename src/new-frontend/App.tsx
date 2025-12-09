@@ -6,8 +6,10 @@ import PreventionGuide from './pages/PreventionGuide';
 import AboutPage from './pages/AboutPage';
 import SeasonalBugCalendar from './pages/SeasonalBugCalendar';
 import BugEducation from './pages/BugEducation';
-import { evaluateBite, askRag, extractAdvice } from './services/dataService';
+import { evaluateBite, askRag, extractAdvice, clearRagSession } from './services/dataService';
 import { AppView, BiteAnalysis, ChatMessage } from './types';
+
+const CHAT_STORAGE_KEY = 'bitefinder_chat_state';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>(AppView.HOME);
@@ -25,6 +27,7 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [remainingOptions, setRemainingOptions] = useState<string[]>([]);
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   const allOptions = [
     "Relief & treatment",
@@ -44,8 +47,67 @@ const App: React.FC = () => {
     ]);
   };
 
+  // Rehydrate chat and analysis state on load
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem(CHAT_STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      setView(saved.view ?? AppView.HOME);
+      setAnalysis(saved.analysis ?? null);
+      setUploadedImage(saved.uploadedImage ?? '');
+      setMessages(
+        (saved.messages ?? []).map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp),
+        }))
+      );
+      setHasPrediction(!!saved.hasPrediction);
+      setLastUserMessage(saved.lastUserMessage ?? '');
+      setHistory(saved.history ?? []);
+      setRemainingOptions(saved.remainingOptions ?? []);
+      setShowSuggestions(!!saved.showSuggestions);
+      evalResRef.current = saved.evalResult ?? null;
+    } catch (err) {
+      console.warn('Unable to rehydrate chat state', err);
+    } finally {
+      setHasHydrated(true);
+    }
+  }, []);
+
+  // Persist chat state after hydration
+  React.useEffect(() => {
+    if (!hasHydrated || typeof window === 'undefined') return;
+    try {
+      const payload = {
+        view,
+        analysis,
+        uploadedImage,
+        messages,
+        hasPrediction,
+        lastUserMessage,
+        history,
+        remainingOptions,
+        showSuggestions,
+        evalResult: evalResRef.current,
+      };
+      window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(payload));
+    } catch (err) {
+      console.warn('Unable to persist chat state', err);
+    }
+  }, [hasHydrated, view, analysis, uploadedImage, messages, hasPrediction, lastUserMessage, history, remainingOptions, showSuggestions]);
+
   // INITIAL ANALYSIS
   const handleAnalyze = async (imageBase64: string, notes: string) => {
+    clearRagSession();
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem(CHAT_STORAGE_KEY);
+      } catch (err) {
+        console.warn('Unable to clear chat state before new analysis', err);
+      }
+    }
     setView(AppView.ANALYZING);
     setUploadedImage(imageBase64);
     setError(null);
@@ -124,28 +186,28 @@ const App: React.FC = () => {
     setShowSuggestions(false);
 
     try {
-      // Check if it's a courtesy message or irrelevant question
-      const relevanceCheck = await evaluateBite({
-        user_text: text,
-        image_gcs_uri: null,
-        image_base64: null,
-        first_call: false,
-        history: [],
-      });
+      // // Check if it's a courtesy message or irrelevant question
+      // const relevanceCheck = await evaluateBite({
+      //   user_text: text,
+      //   image_gcs_uri: null,
+      //   image_base64: null,
+      //   first_call: false,
+      //   history: [],
+      // });
 
-      if (relevanceCheck.eval?.courtesy) {
-        addMessage('ranger', "You're welcome, partner! Let me know if you have other questions about the bite. Stay safe on the trail!");
-        setIsChatLoading(false);
-        return;
-      }
+      // if (relevanceCheck.eval?.courtesy) {
+      //   addMessage('ranger', "You're welcome, partner! Let me know if you have other questions about the bite. Stay safe on the trail!");
+      //   setIsChatLoading(false);
+      //   return;
+      // }
 
-      if (!relevanceCheck.eval?.question_relevant) {
-        const errorMsg = relevanceCheck.eval?.improve_message ||
-          "I can only answer questions about insect bites, symptoms, prevention, or treatment. Keep it trail-related!";
-        addMessage('ranger', errorMsg);
-        setIsChatLoading(false);
-        return;
-      }
+      // if (!relevanceCheck.eval?.question_relevant) {
+      //   const errorMsg = relevanceCheck.eval?.improve_message ||
+      //     "I can only answer questions about insect bites, symptoms, prevention, or treatment. Keep it trail-related!";
+      //   addMessage('ranger', errorMsg);
+      //   setIsChatLoading(false);
+      //   return;
+      // }
 
       // Question is relevant → call RAG
       const ragRes = await askRag({
@@ -187,15 +249,29 @@ const App: React.FC = () => {
     setHistory([]);
     setShowSuggestions(false);
     setRemainingOptions([]);
+    clearRagSession();
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem(CHAT_STORAGE_KEY);
+      } catch (err) {
+        console.warn('Unable to clear chat state on reset', err);
+      }
+    }
   };
 
   const handleNavigate = (newView: AppView) => {
     if (newView === AppView.HOME) {
-      resetApp();
-    } else {
-      setPreviousView(view);
-      setView(newView);
+      if (analysis) {
+        // Keep current session and return to results/chat instead of clearing state
+        setView(AppView.RESULT);
+      } else {
+        resetApp();
+      }
+      return;
     }
+
+    setPreviousView(view);
+    setView(newView);
   };
 
   return (
@@ -244,7 +320,7 @@ const App: React.FC = () => {
             showSuggestions={showSuggestions}
             suggestions={remainingOptions}
             onSuggestionClick={handleSendMessage}
-            onNavigateToGuide={() => setView(AppView.PREVENTION_GUIDE)}
+            onNavigateToGuide={() => handleNavigate(AppView.PREVENTION_GUIDE)}
           />
         )}
 

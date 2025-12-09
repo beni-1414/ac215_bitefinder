@@ -14,6 +14,8 @@ class Settings(BaseModel):
     PORT: int = int(os.getenv("PORT", 8080))
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "info")
     ALLOW_ORIGINS: str = os.getenv("ALLOW_ORIGINS", "*")
+    FIRESTORE_COLLECTION: str = os.getenv("FIRESTORE_COLLECTION", "bitefinder_chat_history")
+    FIRESTORE_DATABASE: str = os.getenv("FIRESTORE_DATABASE", "bitefinder-session-store")
     # Downstream service URLs (can be overridden via env)
     INPUT_EVAL_URL: str = os.getenv("INPUT_EVAL_URL", "http://input_evaluation:9000")
     VL_MODEL_URL: str = os.getenv("VL_MODEL_URL", "http://vlmodel:9000")
