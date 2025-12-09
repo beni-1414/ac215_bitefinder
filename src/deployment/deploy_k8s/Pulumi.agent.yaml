@@ -6,3 +6,4 @@ config:
   security:gcp_ksa_service_account_email: gcp-service@bitefinder-474614.iam.gserviceaccount.com
   deploy-k8s:setupSSL: "false"
   deploy-k8s:appName: bitefinder-agent
+  deploy-k8s:stackName: agent

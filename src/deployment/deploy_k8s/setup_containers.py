@@ -16,8 +16,9 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
 
     # Get the image tags (these are arrays, so we take the first element)
     # NOTE: adjust these output names to match your deploy-images stack
+    stack_name = pulumi.Config("deploy-k8s").get("stackName") or "dev"
     base_tag = "us-east1-docker.pkg.dev/bitefinder-474614/bitefinder-images/"
-    images_stack = pulumi.StackReference("organization/deploy-images/dev")
+    images_stack = pulumi.StackReference(f"organization/deploy-images/{stack_name}")
 
     frontend_tag = images_stack.get_output("frontend-tags").apply(lambda tags: tags[0])
     orchestrator_tag = images_stack.get_output("orchestrator-tags").apply(lambda tags: tags[0])
