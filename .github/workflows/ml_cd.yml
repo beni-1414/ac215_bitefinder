@@ -1,0 +1,60 @@
+name: Auto-Deploy VL Model
+
+on:
+  # schedule:
+  #   - cron: "*/5 * * * *"   # Every 5 minutes
+  workflow_dispatch:        # Manual trigger
+
+jobs:
+  deploy-vlmodel:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    env:
+      GCP_PROJECT: bitefinder-474614
+      GCS_BUCKET: bitefinder-data
+      BEST_MODEL_FILE: best_model.txt
+      PULUMI_CONFIG_KEY: artifact_model_label
+      DEPLOY_DIR: src/deployment
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Install gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT }}
+
+      - name: Download best_model.txt
+        run: |
+          echo "Downloading best_model.txt..."
+          gsutil cp gs://$GCS_BUCKET/$BEST_MODEL_FILE $GITHUB_WORKSPACE/current_best_model.txt
+
+      - name: Build Deployment Container
+        run: |
+          cd $GITHUB_WORKSPACE/$DEPLOY_DIR
+          docker build -t bitefinder-deployment -f Dockerfile .
+
+      - name: Run Deploy Container
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ github.workspace }}/current_best_model.txt":/workspace/current_best_model.txt \
+            -v "${{ github.workspace }}/$DEPLOY_DIR/docker_config.json":/root/.docker/config.json \
+            -v "${{ github.workspace }}/$DEPLOY_DIR/pulumi-plugins":/root/.pulumi/plugins \
+            --mount type=bind,source=$GOOGLE_APPLICATION_CREDENTIALS,target=/secrets/deployment.json \
+            -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/deployment.json \
+            -e USE_GKE_GCLOUD_AUTH_PLUGIN=True \
+            -e GCP_PROJECT=${{ env.GCP_PROJECT }} \
+            -e GCP_REGION=us-central1 \
+            -e GCP_ZONE=us-central1-a \
+            -v $GITHUB_WORKSPACE:/workspace \
+            bitefinder-deployment /app/cd-vlmodel.sh

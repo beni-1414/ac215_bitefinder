@@ -63,6 +63,10 @@ RUN useradd -ms /bin/bash app -d /home/app -u 1000 -p "$(openssl passwd -1 passw
 # Set the working directory
 WORKDIR /app
 
+# Copy entrypoint script and make it executable
+COPY --chown=app:app docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
+
 # Copy dependency files first for better layer caching
 COPY --chown=app:app pyproject.toml uv.lock* ./
 COPY --chown=app:app docker-entrypoint.sh /app/docker-entrypoint.sh

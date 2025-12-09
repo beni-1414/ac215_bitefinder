@@ -1,8 +1,9 @@
 import pulumi
 import pulumi_kubernetes as k8s
 
-artifact_model_label = "vilt_20251206_145815"
-artifact_model_version = "v0"
+config = pulumi.Config()
+artifact_model_label = config.require("artifact_model_label")
+artifact_model_version = "latest"
 
 
 def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):

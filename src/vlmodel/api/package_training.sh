@@ -6,7 +6,7 @@
 echo "📦 Packaging trainer for Google Cloud..."
 
 # Source environment variables
-source ../../../env.dev
+source ../../../env_training.dev
 
 # Define package directory
 PACKAGE_BASE_DIR="package"
