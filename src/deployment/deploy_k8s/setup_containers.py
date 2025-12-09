@@ -187,6 +187,10 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
             namespace=namespace.metadata.name,
         ),
         spec=k8s.apps.v1.DeploymentSpecArgs(
+            replicas=1,
+            strategy=k8s.apps.v1.DeploymentStrategyArgs(
+                type="Recreate",  # 👈 kill old pods before starting new ones
+            ),
             selector=k8s.meta.v1.LabelSelectorArgs(
                 match_labels={"run": "vlmodel"},
             ),
