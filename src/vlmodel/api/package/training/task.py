@@ -31,6 +31,7 @@ def main():
     parser.add_argument('--sweep_config', type=str, default=None)
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-s', '--save', action='store_true')
+    parser.add_argument('-d', '--deploy', action='store_true')
 
     # Parse training arguments
     args = parser.parse_args()
@@ -109,6 +110,7 @@ def training(config=None):
         data_root_dir = config.data_root_dir
         verbose = config.verbose
         save = config.save
+        deploy = config.deploy
 
         # Initialize dataset
         dataset = BugBitePairedDataset(
@@ -144,6 +146,7 @@ def training(config=None):
             verbose=verbose,
             save=save,
             save_dir='models',
+            deploy=deploy,
         )
 
         # Update W&B config with additional parameters

@@ -13,7 +13,9 @@ jobs:
 
     env:
       GCP_PROJECT: bitefinder-474614
+      GCP_REGION: us-central1
       GCS_BUCKET: bitefinder-data
+      STACK: dev
 
     steps:
       - name: Check out repository code
@@ -52,8 +54,28 @@ jobs:
             --mount type=bind,source=$GOOGLE_APPLICATION_CREDENTIALS,target=/secrets/deployment.json \
             --env GOOGLE_APPLICATION_CREDENTIALS=/secrets/deployment.json \
             -e USE_GKE_GCLOUD_AUTH_PLUGIN=True \
+            -e GCS_BUCKET=$GCS_BUCKET \
             -e GCP_PROJECT=$GCP_PROJECT \
             -e GCP_ZONE=us-central1-a \
             -e GCP_REGION=us-central1 \
+            -e STACK=$STACK \
             -e PULUMI_BUCKET=gs://$GCP_PROJECT-pulumi-state-bucket \
-            bitefinder-deployment sh deploy_k8s/deploy_vlmodel.sh
+            bitefinder-deployment deploy_vlmodel.sh
+
+      - name: Commit & Push updated Pulumi stack config
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          PULUMI_FILE="src/deployment/deploy_k8s/Pulumi.${STACK}.yaml"
+
+          echo "Checking for changes in $PULUMI_FILE..."
+
+          if [[ -n "$(git status --porcelain "$PULUMI_FILE")" ]]; then
+            echo "Changes detected — committing $PULUMI_FILE"
+            git add "$PULUMI_FILE"
+            git commit -m "Auto-update Pulumi ${STACK} artifact_model_label [skip ci]"
+            git push
+          else
+            echo "No changes to commit."
+          fi
