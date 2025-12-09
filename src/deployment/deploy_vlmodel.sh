@@ -7,6 +7,8 @@ export GCP_REGION="us-central1"
 export GCS_BUCKET="bitefinder-data"
 export STACK="dev"
 
+cd deploy_k8s/
+
 echo "💡 Starting VL model deployment check..."
 
 # Download latest best_model.txt from GCS
