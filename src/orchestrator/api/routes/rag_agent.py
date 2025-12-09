@@ -62,7 +62,8 @@ model_kwargs = {
 # Firestore-backed chat history
 # -------------------------------------------------------------------
 
-FIRESTORE_COLLECTION = "bitefinder_chat_history"  # you can rename
+FIRESTORE_COLLECTION = settings.FIRESTORE_COLLECTION
+FIRESTORE_DATABASE = settings.FIRESTORE_DATABASE
 
 # 🔹 Make these lazy singletons instead of eager module-level objects
 _firestore_client: Optional[firestore.Client] = None
@@ -78,7 +79,7 @@ def get_firestore_client() -> firestore.Client:
             raise RuntimeError("GCP_PROJECT must be set for Firestore.")
         _firestore_client = firestore.Client(
             project=project_id,
-            database="bitefinder-session-store",
+            database=FIRESTORE_DATABASE,
         )
     return _firestore_client
 
