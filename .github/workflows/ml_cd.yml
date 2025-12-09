@@ -56,5 +56,4 @@ jobs:
             -e GCP_ZONE=us-central1-a \
             -e GCP_REGION=us-central1 \
             -e PULUMI_BUCKET=gs://$GCP_PROJECT-pulumi-state-bucket \
-            -w /deploy_k8s \
-            bitefinder-deployment ./deploy_vlmodel.sh
+            bitefinder-deployment sh deploy_k8s/deploy_vlmodel.sh
