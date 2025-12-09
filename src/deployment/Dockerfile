@@ -6,6 +6,9 @@ FROM python:3.13-slim-bullseye
 # Set the environment variable for non-interactive installations
 ENV DEBIAN_FRONTEND=noninteractive
 ENV UV_PROJECT_ENVIRONMENT=/home/app/.venv
+# Keep the virtualenv path in PATH so Pulumi uses the venv Python by default
+ENV VIRTUAL_ENV=/home/app/.venv
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
 # Install required dependencies
 RUN apt-get update && \
@@ -69,6 +72,7 @@ RUN chmod +x docker-entrypoint.sh
 
 # Copy dependency files first for better layer caching
 COPY --chown=app:app pyproject.toml uv.lock* ./
+COPY --chown=app:app deploy-k8s-update.sh /app/deploy-k8s-update.sh
 
 # Install Python dependencies
 RUN uv sync --frozen
