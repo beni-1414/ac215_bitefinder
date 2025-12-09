@@ -6,6 +6,9 @@ FROM python:3.13-slim-bullseye
 # Set the environment variable for non-interactive installations
 ENV DEBIAN_FRONTEND=noninteractive
 ENV UV_PROJECT_ENVIRONMENT=/home/app/.venv
+# Keep the virtualenv path in PATH so Pulumi uses the venv Python by default
+ENV VIRTUAL_ENV=/home/app/.venv
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
 # Install required dependencies
 RUN apt-get update && \
