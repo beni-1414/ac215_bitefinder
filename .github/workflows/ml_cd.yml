@@ -54,9 +54,11 @@ jobs:
             --mount type=bind,source=$GOOGLE_APPLICATION_CREDENTIALS,target=/secrets/deployment.json \
             --env GOOGLE_APPLICATION_CREDENTIALS=/secrets/deployment.json \
             -e USE_GKE_GCLOUD_AUTH_PLUGIN=True \
+            -e GCS_BUCKET=$GCS_BUCKET \
             -e GCP_PROJECT=$GCP_PROJECT \
             -e GCP_ZONE=us-central1-a \
             -e GCP_REGION=us-central1 \
+            -e STACK=$STACK \
             -e PULUMI_BUCKET=gs://$GCP_PROJECT-pulumi-state-bucket \
             bitefinder-deployment deploy_vlmodel.sh
 
