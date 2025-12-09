@@ -269,7 +269,10 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
                 ),
             ),
         ),
-        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace, vlmodel_pvc]),
+        opts=pulumi.ResourceOptions(
+            provider=k8s_provider,
+            depends_on=[namespace, vlmodel_pvc],
+        ),
     )
 
     vlmodel_service = k8s.core.v1.Service(

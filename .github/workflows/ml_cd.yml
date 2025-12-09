@@ -2,59 +2,58 @@ name: Auto-Deploy VL Model
 
 on:
   # schedule:
-  #   - cron: "*/5 * * * *"   # Every 5 minutes
-  workflow_dispatch:        # Manual trigger
+  #   - cron: "*/5 * * * *" # Every 5 minutes
+  workflow_dispatch: {} # Manual trigger
 
 jobs:
-  deploy-vlmodel:
+  check-and-deploy:
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
 
     env:
       GCP_PROJECT: bitefinder-474614
       GCS_BUCKET: bitefinder-data
-      BEST_MODEL_FILE: best_model.txt
-      PULUMI_CONFIG_KEY: artifact_model_label
-      DEPLOY_DIR: src/deployment
 
     steps:
-      - name: Checkout repo
+      - name: Check out repository code
         uses: actions/checkout@v4
 
-      - name: Authenticate to GCP
+      - id: auth
         uses: google-github-actions/auth@v1
         with:
-          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          credentials_json: '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}'
 
-      - name: Install gcloud CLI
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.GCP_PROJECT }}
+      - name: Configure Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
 
-      - name: Download best_model.txt
-        run: |
-          echo "Downloading best_model.txt..."
-          gsutil cp gs://$GCS_BUCKET/$BEST_MODEL_FILE $GITHUB_WORKSPACE/current_best_model.txt
+      - name: Configure Docker Client
+        run: gcloud auth configure-docker
 
       - name: Build Deployment Container
         run: |
-          cd $GITHUB_WORKSPACE/$DEPLOY_DIR
+          cd ${{ github.workspace }}/src/deployment/
           docker build -t bitefinder-deployment -f Dockerfile .
 
-      - name: Run Deploy Container
+      - name: Run Deploy App
         run: |
-          docker run --rm \
+          docker run --rm --name bitefinder-deployment \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            -v "${{ github.workspace }}/current_best_model.txt":/workspace/current_best_model.txt \
-            -v "${{ github.workspace }}/$DEPLOY_DIR/docker_config.json":/root/.docker/config.json \
-            -v "${{ github.workspace }}/$DEPLOY_DIR/pulumi-plugins":/root/.pulumi/plugins \
+            -v $HOME/.ssh:/home/app/.ssh \
+            -v "${{ github.workspace }}/src/deployment/docker_config.json":/root/.docker/config.json \
+            -v "${{ github.workspace }}/src/deployment/pulumi-plugins":/root/.pulumi/plugins \
+            -v ${{ github.workspace }}/src/new-frontend:/new-frontend \
+            -v ${{ github.workspace }}/src/orchestrator:/orchestrator \
+            -v ${{ github.workspace }}/src/ragmodel:/ragmodel \
+            -v ${{ github.workspace }}/src/vlmodel:/vlmodel \
+            -v ${{ github.workspace }}/src/input_evaluation:/input_evaluation \
+            -v ${{ github.workspace }}/src/deployment/deploy_k8s:/deploy_k8s \
+            -v ${{ github.workspace }}/src/deployment/deploy_images:/deploy_images \
             --mount type=bind,source=$GOOGLE_APPLICATION_CREDENTIALS,target=/secrets/deployment.json \
-            -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/deployment.json \
+            --env GOOGLE_APPLICATION_CREDENTIALS=/secrets/deployment.json \
             -e USE_GKE_GCLOUD_AUTH_PLUGIN=True \
-            -e GCP_PROJECT=${{ env.GCP_PROJECT }} \
-            -e GCP_REGION=us-central1 \
+            -e GCP_PROJECT=$GCP_PROJECT \
             -e GCP_ZONE=us-central1-a \
-            -v $GITHUB_WORKSPACE:/workspace \
-            bitefinder-deployment /app/cd-vlmodel.sh
+            -e GCP_REGION=us-central1 \
+            -e PULUMI_BUCKET=gs://$GCP_PROJECT-pulumi-state-bucket \
+            bitefinder-deployment sh deploy_k8s/deploy_vlmodel.sh
