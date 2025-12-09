@@ -1,12 +1,10 @@
-import os
-
 import pulumi
 import pulumi_kubernetes as k8s
 
 config = pulumi.Config()
 # Allow stack config override, then env var override, then fallback default.
-artifact_model_label = config.get("artifact_model_label") or os.getenv("ARTIFACT_MODEL_LABEL", "clip_20251128_225047")
-artifact_model_version = config.get("artifact_model_version") or os.getenv("ARTIFACT_MODEL_VERSION", "latest")
+artifact_model_label = config.require("artifact_model_label")
+artifact_model_version = config.get("artifact_model_version") or "latest"
 
 
 def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):

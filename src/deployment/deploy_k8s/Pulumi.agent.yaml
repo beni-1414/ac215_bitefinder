@@ -7,3 +7,4 @@ config:
   deploy-k8s:setupSSL: "false"
   deploy-k8s:appName: bitefinder-agent
   deploy-k8s:stackName: agent
+  deploy-k8s:artifact_model_label: clip_20251128_225047
