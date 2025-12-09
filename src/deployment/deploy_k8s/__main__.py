@@ -10,7 +10,8 @@ from setup_loadbalancer_ssl import setup_loadbalancer_ssl
 gcp_config = pulumi.Config("gcp")
 project = gcp_config.get("project")
 region = "us-central1"
-app_name = gcp_config.get("app_name") or "bitefinder"
+deploy_k8s_config = pulumi.Config("deploy-k8s")
+app_name = deploy_k8s_config.get("appName") or "bitefinder"
 setupSSL = False  # Test
 
 # Create the required network setups
