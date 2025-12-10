@@ -16,6 +16,8 @@ const App: React.FC = () => {
   const [previousView, setPreviousView] = useState<AppView>(AppView.HOME);
   const [analysis, setAnalysis] = useState<BiteAnalysis | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string>('');
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +59,8 @@ const App: React.FC = () => {
       setView(saved.view ?? AppView.HOME);
       setAnalysis(saved.analysis ?? null);
       setUploadedImage(saved.uploadedImage ?? '');
+      setUploadPreview(saved.uploadPreview ?? (saved.uploadedImage ? `data:image/jpeg;base64,${saved.uploadedImage}` : null));
+      setNoteDraft(saved.noteDraft ?? saved.lastUserMessage ?? '');
       setMessages(
         (saved.messages ?? []).map((m: any) => ({
           ...m,
@@ -87,16 +91,18 @@ const App: React.FC = () => {
         messages,
         hasPrediction,
         lastUserMessage,
+        noteDraft,
         history,
         remainingOptions,
         showSuggestions,
+        uploadPreview,
         evalResult: evalResRef.current,
       };
       window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(payload));
     } catch (err) {
       console.warn('Unable to persist chat state', err);
     }
-  }, [hasHydrated, view, analysis, uploadedImage, messages, hasPrediction, lastUserMessage, history, remainingOptions, showSuggestions]);
+  }, [hasHydrated, view, analysis, uploadedImage, messages, hasPrediction, lastUserMessage, noteDraft, history, remainingOptions, showSuggestions, uploadPreview]);
 
   // INITIAL ANALYSIS
   const handleAnalyze = async (imageBase64: string, notes: string) => {
@@ -110,6 +116,8 @@ const App: React.FC = () => {
     }
     setView(AppView.ANALYZING);
     setUploadedImage(imageBase64);
+    setUploadPreview((prev) => prev || (imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : null));
+    setNoteDraft(notes);
     setError(null);
     setLastUserMessage(notes);
     setHistory((prev) => [...prev, notes]);
@@ -245,6 +253,8 @@ const App: React.FC = () => {
     setError(null);
     setHasPrediction(false);
     setLastUserMessage('');
+    setNoteDraft('');
+    setUploadPreview(null);
     evalResRef.current = null;
     setHistory([]);
     setShowSuggestions(false);
@@ -293,7 +303,14 @@ const App: React.FC = () => {
                 Show us your bug bite and describe the scene. We'll play detective and help you heal up!
               </p>
             </div>
-            <UploadSection onAnalyze={handleAnalyze} isAnalyzing={false} />
+            <UploadSection
+              onAnalyze={handleAnalyze}
+              isAnalyzing={false}
+              initialImage={uploadPreview}
+              initialNotes={noteDraft}
+              onImageChange={setUploadPreview}
+              onNotesChange={setNoteDraft}
+            />
           </div>
         )}
 

@@ -1,15 +1,33 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface UploadSectionProps {
   onAnalyze: (image: string, notes: string) => void;
   isAnalyzing: boolean;
   initialImage?: string | null;
+  initialNotes?: string;
+  onImageChange?: (dataUrl: string | null) => void;
+  onNotesChange?: (notes: string) => void;
 }
 
-const UploadSection: React.FC<UploadSectionProps> = ({ onAnalyze, isAnalyzing }) => {
-  const [preview, setPreview] = useState<string | null>(null);
-  const [notes, setNotes] = useState('');
+const UploadSection: React.FC<UploadSectionProps> = ({
+  onAnalyze,
+  isAnalyzing,
+  initialImage = null,
+  initialNotes = '',
+  onImageChange,
+  onNotesChange
+}) => {
+  const [preview, setPreview] = useState<string | null>(initialImage);
+  const [notes, setNotes] = useState(initialNotes);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setPreview(initialImage || null);
+  }, [initialImage]);
+
+  useEffect(() => {
+    setNotes(initialNotes || '');
+  }, [initialNotes]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -23,6 +41,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onAnalyze, isAnalyzing })
     reader.onloadend = () => {
       const result = reader.result as string;
       setPreview(result);
+      onImageChange?.(result);
     };
     reader.readAsDataURL(file);
   };
@@ -97,7 +116,10 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onAnalyze, isAnalyzing })
             className="w-full rounded-md border-earth-300 shadow-sm focus:border-forest-500 focus:ring-forest-500 bg-earth-50 p-3 text-earth-900"
             placeholder="e.g., Hiking by a stream when I felt a sting on my ankle. Now there's a red, itchy bump and some swelling..."
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={(e) => {
+              setNotes(e.target.value);
+              onNotesChange?.(e.target.value);
+            }}
           />
         </div>
 
