@@ -9,6 +9,58 @@ interface UploadSectionProps {
   onNotesChange?: (notes: string) => void;
 }
 
+function resizeImageToDataUrl(
+  file: File,
+  options: { maxWidth: number; maxHeight: number; quality: number } = {
+    maxWidth: 1024,
+    maxHeight: 1024,
+    quality: 0.8,
+  }
+): Promise<string> {
+  const { maxWidth, maxHeight, quality } = options;
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+
+        const ratio = Math.min(
+          maxWidth / width,
+          maxHeight / height,
+          1 // never upscale
+        );
+        width = width * ratio;
+        height = height * ratio;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Could not get 2D context"));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Export as JPEG (works great for iPhone photos)
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = e.target?.result as string;
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+
 const UploadSection: React.FC<UploadSectionProps> = ({
   onAnalyze,
   isAnalyzing,
@@ -36,14 +88,21 @@ const UploadSection: React.FC<UploadSectionProps> = ({
     }
   };
 
-  const processFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setPreview(result);
-      onImageChange?.(result);
-    };
-    reader.readAsDataURL(file);
+  const processFile = async (file: File) => {
+    try {
+      const resizedDataUrl = await resizeImageToDataUrl(file, {
+        maxWidth: 1024,
+        maxHeight: 1024,
+        quality: 0.8,
+      });
+
+      setPreview(resizedDataUrl);
+      onImageChange?.(resizedDataUrl);
+    } catch (err) {
+      console.error("Error processing image", err);
+      // Optional: simple user-facing message
+      alert("Sorry, this image format or file is not supported in this browser.");
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
