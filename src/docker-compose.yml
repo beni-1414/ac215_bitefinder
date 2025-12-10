@@ -56,8 +56,8 @@ services:
       WANDB_TEAM: "bitefinder"
       WANDB_PROJECT: "bitefinder-vl"
       MODEL_CACHE_DIR: "/app/vlmodel_cache"
-      ARTIFACT_MODEL_LABEL: "vilt_20251206_145815"
-      ARTIFACT_MODEL_VERSION: "v0"
+      ARTIFACT_MODEL_LABEL: "clip_20251128_225047"
+      ARTIFACT_MODEL_VERSION: "latest"
     volumes:
       - ../../secrets:/secrets:ro
       - ./vlmodel_cache:/app/vlmodel_cache
