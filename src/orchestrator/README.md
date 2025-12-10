@@ -15,8 +15,8 @@ FastAPI service that ties together BiteFinder components. All routes are mounted
 
 ## RAG agent endpoint
 - `POST /rag-agent` also takes `RAGRequest` so clients can switch between `/rag` and `/rag-agent` without changing payloads.
-- Wraps a Google ADK agent (configured with a BiteFinder system prompt) that can decide when to call the same RAG tool (`get_rag_answer`), which in turn hits the RAG model service.
-- Streams internally via ADK and returns a single concise `answer` plus `session_id`/`user_id` for follow-up turns.
+- Wraps a LangChain agent (configured with a BiteFinder system prompt) that can decide when to call the same RAG tool (`get_rag_answer`), which in turn hits the RAG model service.
+- Internally uses Firestore to store the session memory and the agent’s state, allowing it to maintain context across multiple calls.
 
 ## Interchangeability
-Both `/rag` and `/rag-agent` consume the exact same schema (`RAGRequest`), so the frontend can toggle between a direct RAG call and the agent-powered flow without changing request construction. The agent’s tool calls the same RAG model as the hardcoded endpoint to keep grounding consistent. (Ignore the `/rag/agent` route in `rag.py`; it is a work in progress.)
+Both `/rag` and `/rag-agent` consume the exact same schema (`RAGRequest`), so the frontend can toggle between a direct RAG call and the agent-powered flow without changing request construction. The agent’s tool calls the same RAG model as the hardcoded endpoint to keep grounding consistent.

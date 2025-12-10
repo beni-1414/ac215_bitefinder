@@ -1,5 +1,7 @@
 # Agent API
 
+**NOT USED IN PRODUCTION, AGENT IMPLEMENTATION IS DIRECTLY INTEGRATED WITH ORCHESTRATOR**. This is a development container based off the APCOMP 215 tutorial.
+
 ## llm_rag_chat
 This provides a Retrieval-Augmented Generation (RAG) pipeline used to answer bug bite–related questions. It manages user chat sessions, embeds queries, retrieves context from Pinecone, and generates responses using Gemini. The system exposes REST API endpoints for creating chats, continuing conversations, and retrieving past sessions.
 
