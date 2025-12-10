@@ -86,7 +86,7 @@ Model weights, metadata, and experiment logs are tracked via *Weights & Biases* 
 
 Our system follows a microservices design:
 
-- **Input Evaluation Service** — checks text and image quality
+- **Input Evaluation Service** — checks text completeness and image quality/relevance
 - **Vision-Language Model Service** — performs bug bite prediction
 - **RAG Service** — retrieves medical context and generates treatment guidance
 - **Orchestrator Service** — controls the conversation, hosts the LangChain agent, and coordinates all upstream services
@@ -112,7 +112,6 @@ Each backend service container is fully tested, exceeding the **70% code coverag
 
 ![](technical_architecture.jpeg)
 
-TODO: update the technical architecture to include Firestore.
 ---
 
 ## Impact 🌎
@@ -122,15 +121,14 @@ BiteFinder democratizes access to bite-related medical knowledge by providing:
 - **Explainable predictions** backed by a custom trained vision-language model, not general LLM guesswork.
 - **Fast, personalized insights** at the moment of concern, backed by trusted medical sources.
 - **Reduced medical uncertainty** for users without clinical expertise or immediate access to care.
-- A foundation that could expand to include:
-  - other venomous animal encounters
-  - distinction between allergic reactions and bites
-  - travel-specific bite alerts
-  - telemedicine integrations
-  - public health monitoring
-  - Offline distilled mobile app for field use.
 
-By blending cutting-edge multimodal AI with practical user needs, BiteFinder empowers people to better understand their health without unnecessary anxiety or delay.
+The next planned steps for BiteFinder are:
+  - Expand the dataset to include other venomous animal encounters, and better distinguish between bites and other skin conditions.
+  - Add a monetization layer on top of the RAG, so it recommends treatment or prevention products based on the user’s specific case.
+  - Public health and epidemiological monitoring of bug bite prevalence.
+  - Offline mobile app for field use.
+
+*Curious how BiteFinder works? Explore our repo and try the app, just don’t blame us if you start inspecting every little bite you get next summer.*
 
 ---
 
@@ -145,5 +143,3 @@ By blending cutting-edge multimodal AI with practical user needs, BiteFinder emp
 - *Additional references available in project repo*
 
 ---
-
-*Curious how BiteFinder works? Explore our repo and try the app, just don’t blame us if you start inspecting every little bite you get next summer.*
