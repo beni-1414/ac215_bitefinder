@@ -1,15 +1,15 @@
 name: Auto-Deploy VL Model
 
 on:
-  # schedule:
-  #   - cron: "*/5 * * * *" # Every 5 minutes
-  workflow_dispatch: {} # Manual trigger
+  schedule:
+    - cron: "0 0 * * *"   # Every day
+  workflow_dispatch: {}   # Manual trigger
 
 jobs:
   check-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
 
     env:
       GCP_PROJECT: bitefinder-474614
