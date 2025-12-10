@@ -439,3 +439,124 @@ def setup_containers(project, namespace, k8s_provider, ksa_name, app_name):
 
     # Keep the same pattern of returning frontend + main API-like service
     return frontend_service, orchestrator_service
+
+    
+    ################################################################################
+    # VL Model StatefulSet implementation to solve RWO PVC issues (with PVC per pod)
+    ################################################################################
+
+    # vlmodel_statefulset = k8s.apps.v1.StatefulSet(
+    #     "vlmodel",
+    #     metadata=k8s.meta.v1.ObjectMetaArgs(name="vlmodel", namespace=namespace.metadata.name),
+    #     spec=k8s.apps.v1.StatefulSetSpecArgs(
+    #         service_name="vlmodel",
+    #         replicas=1,
+    #         selector=k8s.meta.v1.LabelSelectorArgs(match_labels={"run": "vlmodel"}),
+    #         template=k8s.core.v1.PodTemplateSpecArgs(
+    #             metadata=k8s.meta.v1.ObjectMetaArgs(labels={"run": "vlmodel"}),
+    #             spec=k8s.core.v1.PodSpecArgs(
+    #                 service_account_name=ksa_name,
+    #                 security_context=k8s.core.v1.PodSecurityContextArgs(fs_group=1000),
+    #                 containers=[
+    #                     k8s.core.v1.ContainerArgs(
+    #                         name="vlmodel",
+    #                         image=vlmodel_tag,
+    #                         ports=[k8s.core.v1.ContainerPortArgs(container_port=9000)],
+    #                         env=[
+    #                             k8s.core.v1.EnvVarArgs(name="GCP_PROJECT", value=project),
+    #                             k8s.core.v1.EnvVarArgs(name="GCP_BUCKET_NAME", value="bitefinder-data"),
+    #                             k8s.core.v1.EnvVarArgs(name="WANDB_TEAM", value="bitefinder"),
+    #                             k8s.core.v1.EnvVarArgs(name="WANDB_PROJECT", value="bitefinder-vl"),
+    #                             k8s.core.v1.EnvVarArgs(name="MODEL_CACHE_DIR", value="/app/vlmodel_cache"),
+    #                             k8s.core.v1.EnvVarArgs(name="ARTIFACT_MODEL_LABEL", value=artifact_model_label),
+    #                             k8s.core.v1.EnvVarArgs(name="ARTIFACT_MODEL_VERSION", value=artifact_model_version),
+    #                         ],
+    #                         volume_mounts=[
+    #                             k8s.core.v1.VolumeMountArgs(
+    #                                 name="vlmodel-cache",
+    #                                 mount_path="/app/vlmodel_cache",
+    #                             )
+    #                         ],
+    #                         resources=k8s.core.v1.ResourceRequirementsArgs(
+    #                             requests={"cpu": "500m", "memory": "4Gi"},
+    #                             limits={"cpu": "1", "memory": "8Gi"},
+    #                         ),
+    #                     ),
+    #                 ],
+    #             ),
+    #         ),
+    #         volume_claim_templates=[
+    #             k8s.core.v1.PersistentVolumeClaimArgs(
+    #                 metadata=k8s.meta.v1.ObjectMetaArgs(name="vlmodel-cache"),
+    #                 spec=k8s.core.v1.PersistentVolumeClaimSpecArgs(
+    #                     access_modes=["ReadWriteOnce"],
+    #                     resources=k8s.core.v1.VolumeResourceRequirementsArgs(
+    #                         requests={"storage": "10Gi"},
+    #                     ),
+    #                 ),
+    #             )
+    #         ],
+    #     ),
+    #     opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace]),
+    # )
+
+    # # Headless service for StatefulSet pod DNS
+    # vlmodel_headless_service = k8s.core.v1.Service(
+    #     "vlmodel-service",
+    #     metadata=k8s.meta.v1.ObjectMetaArgs(name="vlmodel", namespace=namespace.metadata.name),
+    #     spec=k8s.core.v1.ServiceSpecArgs(
+    #         cluster_ip="None",
+    #         ports=[k8s.core.v1.ServicePortArgs(port=9000, target_port=9000)],
+    #         selector={"run": "vlmodel"},
+    #     ),
+    #     opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[vlmodel_statefulset]),
+    # )
+
+    # # ClusterIP service for orchestrator load-balancing
+    # vlmodel_lb_service = k8s.core.v1.Service(
+    #     "vlmodel-lb-service",
+    #     metadata=k8s.meta.v1.ObjectMetaArgs(name="vlmodel-lb", namespace=namespace.metadata.name),
+    #     spec=k8s.core.v1.ServiceSpecArgs(
+    #         type="ClusterIP",
+    #         ports=[k8s.core.v1.ServicePortArgs(port=9000, target_port=9000)],
+    #         selector={"run": "vlmodel"},
+    #     ),
+    #     opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[vlmodel_statefulset]),
+    # )
+
+
+    # orchestrator_deployment = k8s.apps.v1.Deployment(
+    #     "orchestrator",
+    #     metadata=k8s.meta.v1.ObjectMetaArgs(name="orchestrator", namespace=namespace.metadata.name),
+    #     spec=k8s.apps.v1.DeploymentSpecArgs(
+    #         selector=k8s.meta.v1.LabelSelectorArgs(match_labels={"run": "orchestrator"}),
+    #         template=k8s.core.v1.PodTemplateSpecArgs(
+    #             metadata=k8s.meta.v1.ObjectMetaArgs(labels={"run": "orchestrator"}),
+    #             spec=k8s.core.v1.PodSpecArgs(
+    #                 service_account_name=ksa_name,
+    #                 containers=[
+    #                     k8s.core.v1.ContainerArgs(
+    #                         name="orchestrator",
+    #                         image=orchestrator_tag,
+    #                         ports=[k8s.core.v1.ContainerPortArgs(container_port=9000)],
+    #                         env=[
+    #                             k8s.core.v1.EnvVarArgs(name="RAG_MODEL_URL", value="http://ragmodel:9000"),
+    #                             k8s.core.v1.EnvVarArgs(name="VL_MODEL_URL", value="http://vlmodel-lb:9000"),
+    #                             k8s.core.v1.EnvVarArgs(name="INPUT_EVAL_URL", value="http://input-evaluation:9000"),
+    #                             k8s.core.v1.EnvVarArgs(name="ALLOW_ORIGINS", value="http://localhost:3001"),
+    #                             k8s.core.v1.EnvVarArgs(name="GCP_PROJECT", value=project),
+    #                         ],
+    #                         resources=k8s.core.v1.ResourceRequirementsArgs(
+    #                             requests={"cpu": "250m", "memory": "1Gi"},
+    #                             limits={"cpu": "500m", "memory": "2Gi"},
+    #                         ),
+    #                     ),
+    #                 ],
+    #             ),
+    #         ),
+    #     ),
+    #     opts=pulumi.ResourceOptions(
+    #         provider=k8s_provider,
+    #         depends_on=[ragmodel_service, vlmodel_lb_service, input_eval_service],
+    #     ),
+    # )

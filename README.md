@@ -6,19 +6,32 @@ Team Members: Jack Hwang, Zoe Zabetian, Irith Katiyar, Benet Fité
 
 ## Overview
 
-BiteFinder is an AI-powered web app that helps users identify bug bites and receive tailored treatment advice. By combining a user's image and text data through a multimodal ML pipeline, it classifies the likely bug type and retrieves relevant medical guidance using a RAG model.
+BiteFinder is an AI-powered web app that helps users identify bug bites and receive tailored treatment advice. By combining a user's image and text data through a multimodal ML pipeline, it classifies the likely bug type and retrieves relevant medical guidance using an LLM agent supplied with a RAG model.
 
-## MS 4
-
-All of the required documentation for MS 4 is contained in this README file (e.g., application design document, local setup and usage, data versioning, model fine-tuning summary), or linked from this README file (e.g., solution and technical architecture and screenshots of CI run in `docs` folder, container README files).
+BiteFinder is live at http://104.197.137.228.sslip.io/! (Note that this URL only works with http not https.)
 
 ## Usage
 
 ### Prerequisites
 
 - Docker installed on your system
-- Service account has access to GCP secret manager with the secrets `OPENAI_API_KEY`, `WANDB_API_KEY`, and `PINECONE_API_KEY`
-- Service account has access to GCS bucket `bitefinder_data`
+- Two service accounts:
+    - GCP service account given the following roles:
+        - Storage Object Viewer
+        - Vertex AI Administrator
+        - Artifact Registry Reader
+        - Cloud Data Store User
+    - Deployment service account given the following roles:
+        - Compute Admin
+        - Compute OS Login
+        - Artifact Registry Administrator
+        - Kubernetes Engine Admin
+        - Service Account User
+        - Storage Admin
+- GCP secret manager with the secrets `OPENAI_API_KEY`, `WANDB_API_KEY`, and `PINECONE_API_KEY` 
+- GCS bucket called `bitefinder_data`
+- Vector database set up in Pinecone
+- Model metadata and weights stored as an artifact in Weights & Biases
 
 ### How to Run Locally
 
@@ -29,7 +42,16 @@ All of the required documentation for MS 4 is contained in this README file (e.g
 
 (Note that vlmodel application startup takes some time to complete.)
 
-A demo of our app is located in the [docs/frontend_demo](docs/frontend_demo) folder, which shows a series of screenshots navigating through our app's flow.
+### How to Deploy Automatically
+
+1. Add `/deploy-app` to your commit message and push to main.
+
+### How to Deploy Manually
+
+1. Navigate to the `src/deployment` directory.
+2. Run `sh docker-shell.sh` to start an interactive terminal in the deployment container.
+3. Run `cd deploy_images` and `pulumi up --stack dev -y` to build and push images to Google Artifact Registry.
+4. Run `cd ../deploy_k8s` and `pulumi up --stack dev --refresh -y` to deploy all of the container images.
 
 ## Application Design
 
@@ -40,11 +62,13 @@ Our application design follows a microservices architecture, separated into the 
 - `orchestrator`: serves orchestrator that performs chatting Q/A functionality and calls all prior services
 - `frontend`: implements the React-based frontend of our application and calls orchestrator service on backend
 
-Each container is organized as a stateless FastAPI container with an `api/` folder and a `tests/` folder (except the frontend, which is organized as a standard Next.js app). Each container is Dockerized, with a `Dockerfile` and dependency file (`pyproject.toml` for everything except the frontend that has `package.json`). Each container also has a `docker-shell.sh` file for local development of each individual container.
+Our repository also contains a `deployment` container responsible for setting up our Pulumi infrastructure and Kubernetes cluster.
+
+Each container is organized as a stateless FastAPI container with an `api/` folder and a `tests/` folder (except the frontend, which is organized as a standard React app). Each container is Dockerized, with a `Dockerfile` and dependency file (`pyproject.toml` for everything except the frontend that has `package.json`). Each container also has a `docker-shell.sh` file for local development of each individual container.
 
 The general flow of our application is that when a user sends a message in the chat, the frontend will call the orchestrator service, which is responsible for calling the input evaluation, prediction, and RAG services as appropriate. When the user sends the initial image and text, the orchestrator calls the input evaluation service, and if of good quality, calls the VL model service that returns a prediction. When the user is sending follow-up questions, the orchestrator's LLM engages with Q/A with the user and decides whether/when to call the RAG tool.
 
-Our application's solution architecture and technical architecture are described in the presentation here: [docs/solution-architecture.pdf](docs/solution-architecture.pdf).
+Our application's solution architecture and technical architecture are described [docs](docs).
 
 ### input_evaluation
 
@@ -72,9 +96,13 @@ More detail about this container and its individual usage can be found in [src/o
 
 ### frontend
 
-The frontend contains our React-based app using Next.js. It contains all of the necessary UI modules for our chat. We are currently in the process of refining our UI, but our current version has a single page with a chat box where the user can send text and an image and engage with our AI expert with questions.
+The frontend contains our React-based app, located in the `new-frontend` folder (the `frontend` folder contains an older version of our frontend and can be ignored). A demo of our UI flow is located in the [docs/frontend_demo](docs/frontend_demo) folder, which shows a series of screenshots navigating through BiteFinder.
 
-The frontend source code in `src` is organized into four subdirectories: `app` contains the main chat page, app layout, and global style sheet; `components` contains React components for basic user interface features (buttons, text areas, etc.), chat-specific components (chat input, chat message, and question suggestions), and layout (header, footer, light/dark mode toggle); `hooks`; and `lib` contains our `DataService` which integrates our frontend with our backend by making calls to the orchestrator service.
+### deployment
+
+This container implements our Pulumi infrastructure as code. Our deployed application is hosted on a Kubernetes cluster that has a maximum of 4 nodes.
+
+More detail about this container and its individual usage can be found in [src/deployment/README.md](src/deployment/README.md).
 
 ## ML Pipeline
 
@@ -83,7 +111,7 @@ Our application also houses a workflow for data processing and model training, c
 - `image_augmentation`: augments the raw training images
 - `vlmodel`: packages and runs a Vertex AI training job to train the vision-language model
 
-While these containers aren't currently chained together, they will be in the near future in a Vertex AI Pipeline where synthetic label generation and image augmentation are both chained with VL model training. Note that model deployment is not chained in this pipeline because our model is not deployed as a Vertex AI endpoint but rather on our self-hosted container (as described above). However, we will still have continuous deployment for our model as a hook will trigger the `vlmodel` inference service to re-up itself whenever the model weights (on W&B) are updated. This workflow will be implemented by our final milestone.
+Synthetic label generation and image augmentation were only used initially 
 
 [Note that the `vlmodel` directory contains both the code for model training and model inference, as they both need to share the same model architectures defined in the training package. The Dockerfile in `vlmodel` defines the container for serving the model for inference, while the training code is packaged in the `package` folder to be run serverlessly using Vertex AI.]
 
@@ -101,9 +129,20 @@ More detail about this container and its individual usage can be found in [src/i
 
 ### vlmodel
 
-In addition to the inference container serving the trained model, this directory contains scripts and a training package (`package/training`) that package and run a custom Vertex AI training job to train our vision-language classification model. The job either runs a single training job or a hyperparameter sweep. It downloads the image and text data from our GCS bucket, constructs a paired image-text dataset, runs model training/validation for the given set(s) of hyperparameters, logs training/validation metrics on W&B, and saves the model weights and metadata on W&B.
+In addition to the inference container serving the trained model, this directory contains scripts and a training package (`package/training`) that package and run a custom serverless Vertex AI training job to train our vision-language classification model. The job either runs a single training job or a hyperparameter sweep. It downloads the image and text data from our GCS bucket, constructs a paired image-text dataset, runs model training/validation for the given set(s) of hyperparameters, logs training/validation metrics on W&B, and saves the model weights and metadata on W&B.
 
 More detail about this container and its individual usage can be found in [src/vlmodel/README.md](src/vlmodel/README.md).
+
+## Continuous Deployment
+
+Push a commit to the main branch with the text `/deploy-app` to trigger a redeployment of the entire application. Our continuous deployment pipeline is defined in `.github/workflows/cd.yml`. This will rebuild and redeploy all of the containers with the latest code by running the script `deploy-k8s-update.sh`.
+
+## ML Continuous Deployment
+
+The purpose of ML continuous deployment is to be able to train, validate and deploy our vision-language model to production in a single line of code. Our ML continuous deployment pipeline is defined in `.github/workflows/ml_cd.yml`. It is scheduled to run once a day automatically, or can be manually triggered in GitHub Actions (under the name Auto-Deploy VL Model). This workflow builds and runs the deployment container and checks whether the artifact name in `best_model.txt` in our GCS bucket has changed compared to the `artifact_model_name` variable in our Pulumi config. If not, nothing happens, as there is no new model to deploy. If it has changed, then there is a new trained model in W&B whose weights need to be downloaded and instansiated into our `vlmodel` pod, so we change our Pulumi config variable `artifact_model_name` to the new contents of `best_model.txt`. Then the `vlmodel` deployment is stripped down, refreshed, and re-upped.
+
+To change `best_model.txt`, a training job can be run with the `--deploy` flag to update the text file with the saved artifact name of the newly trained model. Thus, the entire vlmodel training and deployment pipeline is automated from simply running a job with this flag set. The validation check we have to ensure only models meeting performance thresholds are deployed is to check that the accuracy on the validation set of the trained model is at least 80% before updating `best_model.txt` in the trainer.
+
 
 ## Continuous Integration
 
@@ -121,7 +160,9 @@ To run tests locally:
 1. Navigate to `src/<service-name>` (e.g., `src/vlmodel`).
 2. Run `pytest --cov=api --cov-report=term-missing` to run the tests and generate a coverage report.
 
-Screenshots of passing tests and coverage reports can be found in [docs/test_coverage](docs/test_coverage) folder for each backend service container. All of our test suites exceed the 75% coverage requirement.
+Screenshots of passing tests and coverage reports can be found in [docs/test_coverage](docs/test_coverage) folder for each backend service container. All of our test suites exceed the 75% coverage requirement. 
+
+Modules in our codebase not covered by testing are the frontend, vlmodel training, synthetic label generation, and image augmentation.
 
 ### System Tests
 
@@ -162,5 +203,9 @@ Since our data does not change ofter, we are not using a data versioning tool li
 
 The raw image data used for bug bite classification is available here: https://www.kaggle.com/datasets/moonfallidk/bug-bite-images. The directory structure of this dataset is what is followed/expected by our trainer.
 
-## Continuous Deployment
-Push a commit to the main branch with the text `/deploy-app` to trigger a redeployment of the entire application. This will rebuild and redeploy all of the containers with the latest code. Workflow code is in `.github/workflows/cd.yml`.
+## Known Issues and Limitations
+
+The known issues and limitations of the current deployed version of BiteFinder are listed:
+- Our dataset only contains 7 types of bug bites, so we want to diversify our training dataset to add more bugs and more symptoms texts to illustrate the multitude of relaistic scenarios in which people get bug bites. We also want to make our bug bite classes more granular, e.g., instead of predicting just "ant" we can predict "fire ant", etc.
+- None of our services check if the skin image a user provides actually has a bug bite, i.e., it will predict a bug bite for all skin images, even if there is no bug bite. To fix this, we can in future versions add a simple ML model to classify the image as bite versus no bite as a layer on top of our vision-language model.
+- Finally, BiteFinder has not been stress tested for scalability limits, i.e., how many users can use the app simultaneously. Having a PVC vlmodel cache for our vlmodel pod complicates scaling a bit since our PVC is RWO, so an implemented solution we have is to use a StatefulSet (with volumeClaimTemplates in the StatefulSet's specification to integrate PVCs with StatefulSets), so this way each vlmodel pod gets its own replica of the vlmodel cache so subsequent vlmodel pods won't take a long time to restart.

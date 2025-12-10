@@ -32,6 +32,7 @@ Search for each of these in the GCP search bar and click enable to enable these 
     - Storage Object Viewer
     - Vertex AI Administrator
     - Artifact Registry Reader
+    - Cloud Data Store User
 - Then click done.
 - This will create a service account
 - On the right "Actions" column click the vertical ... and select "Create key". A prompt for Create private key for "gcp-service" will appear select "JSON" and click create. This will download a Private key json file to your computer. Copy this json file into the **secrets** folder.

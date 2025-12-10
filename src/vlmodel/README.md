@@ -80,6 +80,31 @@ Model inference is run as an API service using FastAPI in a Docker container spe
 
 Currently, two vision-language model architectures are implemented: CLIP and ViLT. Both implement a customizable classification head (a set of linear layers with dropout and ReLU activation projecting the output embedding space to the label space) on top of the respective vision-language model, which can have a customizable number of layers frozen.
 
+### Training Job Arguments
+
+A training job can be customized with the following arguments:
+- `model`: type of vl model, either "clip" or "vilt"
+- `unfreeze_layers`: number of layers to unfreeze from pretrained vl model
+- `classifier_layer`: number of linear layers in the classifier head on top of the vl model
+- `activation`: type of activation function, either "relu" or "gelu"
+- `dropout_prob`: dropout probability for dropout in classifier head
+- `epochs`: number of training epochs (iterations)
+- `batch_size`: batch size
+- `optimizer`: optimizer class, either "sgd", "adam", or "adamw"
+- `lr`: learning rate (for optimizer)
+- `weight_decay`: weight decay (for optimizer)
+- `text_fname`: the filename of the text inputs for the training data
+- `data_root_dir`: the directory where the training data is housed in GCS bucket
+- `seed`: seed to set for reproducibility
+- `sweep_config`: config file provided only if hyperparameter sweep instead of a single training job
+- `verbose`: flag set for extra printing
+- `save`: flag set to save trained model weights to W&B
+- `deploy`: flag set to deploy trained model into production
+
+### Continuous Model Deployment
+
+To deploy a trained model into production, both the `--save` and `--deploy` flags must be provided in the training job config, and the model must achieve at least an 80% accuracy on the validation set, to ensure consistently high model performance in our deployed app. The deploy flag simply updates the `best_model.txt` file in our GCS bucket with the new artifact name that has been stored on W&B, and our CD workflow is scheduled to re-up our `vlmodel` deployment if the name in this text file changes.
+
 ### Data Format
 
 The dataset (whether stored locally or on a GCP bucket) must be formatted in the following directory structure, where `bug_1`, ..., `bug_n` correspond to the bug bite labels:
