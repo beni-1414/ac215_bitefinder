@@ -8,7 +8,7 @@ Team Members: Jack Hwang, Zoe Zabetian, Irith Katiyar, Benet Fité
 
 BiteFinder is an AI-powered web app that helps users identify bug bites and receive tailored treatment advice. By combining a user's image and text data through a multimodal ML pipeline, it classifies the likely bug type and retrieves relevant medical guidance using an LLM agent supplied with a RAG model.
 
-BiteFinder is live at http://104.197.137.228.sslip.io/! (Note that this URL only works with http not https.)
+**BiteFinder is now live at http://104.197.137.228.sslip.io!**
 
 ## Usage
 
@@ -90,7 +90,7 @@ More detail about this container and its individual usage can be found in [src/r
 
 ### orchestrator
 
-This container implements a FastAPI web service that is responsible for the chatting Q/A with the user. We currently have two equivalent implementations for our orchestrator: a fully hard-coded version that controls the logic of when each of the services is called, and an agentic version that controls the follow-up Q/A and when our RAG service is called. The orchestrator serves as the layer between the frontend and the above backend services.
+This container serves as the layer between the frontend (called by its data service) and the above backend services. It implements a FastAPI web service that is responsible for the chatting Q/A with the user. This is implemented as an LLM agent using LangChain to control the follow-up Q/A and decide when to call our RAG service.
 
 More detail about this container and its individual usage can be found in [src/orchestrator/README.md](src/orchestrator/README.md).
 
