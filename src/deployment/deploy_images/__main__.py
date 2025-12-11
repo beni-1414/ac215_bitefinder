@@ -55,3 +55,8 @@ frontend_image = build_image("frontend", "new-frontend")
 input_evaluation_image = build_image("input-evaluation", "input_evaluation")
 ragmodel_image = build_image("ragmodel", "ragmodel")
 # vlmodel_image = build_image("vlmodel", "vlmodel") # Too big, pushed once and refer to prebuilt image
+
+
+# To rebuild vlmodel image, run in terminal (faster manually than Pulumi):
+# docker build --platform=linux/amd64 -t us-east1-docker.pkg.dev/bitefinder-474614/bitefinder-images/vlmodel:dev .
+# docker push us-east1-docker.pkg.dev/bitefinder-474614/bitefinder-images/vlmodel:dev
