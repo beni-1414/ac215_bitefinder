@@ -1,7 +1,6 @@
-# bitefinder
+# BiteFinder: Using Multimodal AI to Identify Bug Bites and Deliver Personalized Treatment Advice
 
 Team: Jack Hwang, Zoe Zabetian, Irith Katiyar, Benet Fité
-
 
 BiteFinder is an AI-powered web app that helps users identify bug bites and receive tailored treatment advice. By combining a user's image and text data through a multimodal ML pipeline, it classifies the likely bug type and retrieves relevant medical guidance using an LLM agent supplied with a RAG model. BiteFinder was originally created as a part of APCOMP 215: Advanced Practical Data Science at the Harvard School of Engineering and Applied Sciences.
 
