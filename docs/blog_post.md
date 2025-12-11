@@ -12,9 +12,11 @@
 
 - [Introduction](#introduction-🐜)
 - [Problem & Motivation](#problem--motivation-🕷️)
-- [Our Solution](#our-solution-🔍)
+- [Our Solution](#our-solution-💡)
 - [Application Architecture](#application-architecture-⚙️)
 - [ML Pipeline](#ml-pipeline-🚀)
+- [RAG Pipeline](#rag-pipeline-🔍)
+- [Orchestration Pipeline](#orchestration-pipeline-🧠)
 - [Deployment & MLOps](#deployment--mlops-☁️)
 - [Impact & Next Steps](#impact--next-steps-🌎)
 - [References](#references-📚)
@@ -31,16 +33,16 @@ Whether you're a curious camper, concerned parent, or bug enthusiast, BiteFinder
 
 Arthropods are responsible for millions of bites each year, many of which result in:
 
-- misidentification of the biting species
-- delayed or incorrect treatment
-- unnecessary anxiety
-- avoidable doctor visits
+- Misidentification of the biting species
+- Delayed or incorrect treatment
+- Unnecessary anxiety
+- Avoidable doctor visits
 
-Online resources are fragmented and generic, and while medical professionals can diagnose bites, access to one is not always immediate or affordable. Furthermore, ChatGPT-like LLMs can generate convincing but unvalidated advice, and often reject to answer due to safety concerns.
+Online resources are fragmented and generic, and while medical professionals can diagnose bites, access to one is not always immediate or affordable. Furthermore, ChatGPT-like LLMs can generate convincing but unvalidated advice, and often reject to answer due to medical safety concerns.
 
 **Our goal**: build a system that can classify the type of bug bite from a user's image and symptoms, and offer accurate, contextual advice on treatment and prevention instantly.
 
-## Our Solution 🔍
+## Our Solution 💡
 
 BiteFinder combines **multimodal ML**, **agentic LLMs**, and **vector knowledge retrieval** to create a guided, conversational experience.
 
@@ -61,36 +63,37 @@ The two key innovations that make BiteFinder possible is our custom **vision-lan
 Our system follows a microservices design:
 
 - **Input Evaluation Service** — checks text completeness and image quality/relevance
-- **Vision-Language Model Service** — performs bug bite prediction
-- **RAG Service** — retrieves medical context and generates treatment guidance
+- **Vision-Language Model Service** — performs bug bite prediction given an image-text pair
+- **RAG Service** — retrieves relevant medical context for generating grounded treatment guidance
 - **Orchestrator Service** — controls the conversation, hosts the *LangChain* agent, and coordinates all upstream services
 - **Frontend** — a React-based chat interface that enables seamless interaction, that also hosts many informative resources about bug bites, including general prevention tips and a seasonal bug calendar
 
-Each backend service is organized as a Dockerized stateless FastAPI container. This design is summarized in our technical architecture diagram and the following sections:
-
-![](technical_architecture.png)
+Each backend module is organized as a **stateless FastAPI service** housed in a **Dockerized container**. The general flow of our application is that our frontend interfaces with our orchestrator service, which thereby calls our input evaluation, vision-language prediction, and RAG services as appropriate. The following sections detail this architecture.
 
 ## ML Pipeline 🚀
 
-The data for training the model comes from [Kaggle's Bug Bite Images dataset](#references). Our machine learning pipeline has three components:
+The image data for training the model comes from [Kaggle's Bug Bite Images dataset](#references). Before training on this data, we performed two initial preprocessing steps to construct an ML-ready paired image-text dataset:
 
 - **Synthetic label generator** – creates diverse symptom/location labels using LLM-based synthesis
 - **Image augmentation** – expands dataset via rotation, jitter, and perturbations
-- **Vision-language classifier** – uses paired image–text embeddings to identify bug bite type
 
-We experimented with two research-backed vision-language architectures: **CLIP** and **ViLT**. To fine-tune them, we performed systematic hyperparameter sweeps to achieve not only high accuracy but also high definitiveness in its predictions. Our best-performing CLIP model reached a validation **94% accuracy** and **93% confidence on correct predictions**.
+Our image and text datasets were versioned as static snapshots on our Google Cloud Storage bucket.
 
-## Retrieval-Augmented Generation (RAG) Pipeline 🧠🔍
+For our bug bite classifier, we built a vision-language model to construct paired image–text embeddings, and a classification head on top of that to convert that embedding space to our "bug bite" space. We experimented with two research-backed vision-language models: **CLIP** and **ViLT**. To fine-tune them for bug bite classification, we performed systematic hyperparameter sweeps to achieve not only high accuracy but also high definitiveness in its predictions. Our best-performing CLIP model reached a validation **94% accuracy** and **93% confidence on correct predictions**. Model weights and metadata were stored in *Weights & Biases*, which our vision-language model service uses to serve our best-performing model for inference.
 
-We also built a **RAG**, using **clinically reliable sources** including:
+## RAG Pipeline 🔍
 
+We also built a **retrieval-augmented generation (RAG) system**, using **clinically reliable sources** including:
 
 - **Cleveland Clinic**
 - **National Library of Medicine (NLM)**
 - **UC Integrated Pest Management (UC IPM)**
 
-All relevant documents were chunked, embedded and loaded into **Pinecone**, which is consumed by the orchestrator. When the VL model classifies an image, the predicted bug type becomes the query key for the RAG pipeline. Through Pinecone, the system retrieves the top clinically aligned documents for that bug species, allowing the LLM to generate **context-aware explanations, differential considerations, and guidance**.
+All relevant documents were chunked, embedded and loaded into *Pinecone*, which is consumed by the orchestrator. When the VL model classifies an image, the predicted bug type becomes the query key for the RAG pipeline. Through Pinecone, the system retrieves the top clinically aligned documents for that bug species, allowing the LLM to generate **context-aware explanations, differential considerations, and guidance**.
 
+## Orchestration Pipeline 🧠
+
+TODO!
 
 ## Deployment & MLOps ☁️
 
@@ -98,15 +101,19 @@ BiteFinder is deployed with a **modern MLOps tech stack** that lives largely wit
 
 - **Dockerized microservices** running on a Kubernetes cluster, capable of autoscaling and load balancing to meet demand
 - **Pulumi** for deployment infrastructure-as-code automation
-- **GitHub Actions** for CI/CD, ensuring automated testing, app deployment, and ML deployment
+- **GitHub Actions** for CI/CD, ensuring automated linting, formatting, testing, app deployment, and ML deployment
 - **Vertex AI** for running automated serverless training jobs and their LLM model garden
 - **Google Artifact Registry** for versioned microservice container images for production
 - **Google Cloud Storage** for image/text data storage and versioning
-- **Weights & Biases** for experiment tracking and model storage and versioning
+- **Weights & Biases** for experiment tracking and model artifact storage and versioning
 - **Firestore** for user session management and conversation history
 - **Pinecone** for vector-based medical knowledge retrieval
 
 Even better, the entire application can be rebuilt via a single `/deploy-app` commit trigger. And, if we want to update our classifier for better performance, we can train and deploy our vision-language model in a single line of code!
+
+Thus, we arrive at our completed technical architecture, illustrated in the diagram below:
+
+![](technical_architecture.png)
 
 ## Impact & Next Steps 🌎
 
