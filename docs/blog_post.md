@@ -82,7 +82,7 @@ We experimented with two research-backed vision-language architectures: **CLIP**
 
 ## Retrieval-Augmented Generation (RAG) Pipeline 🧠🔍
 
-We also built a **RAG**, which was built using **clinically reliable sources**, including:
+We also built a **RAG**, using **clinically reliable sources** including:
 
 
 - **Cleveland Clinic**
