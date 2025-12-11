@@ -72,14 +72,7 @@ Each backend module is organized as a **stateless FastAPI service** housed in a 
 
 ## ML Pipeline 🚀
 
-The image data for training the model comes from [Kaggle's Bug Bite Images dataset](#references). Before training on this data, we performed two initial preprocessing steps to construct an ML-ready paired image-text dataset:
-
-- **Synthetic label generator** – creates diverse symptom/location labels using LLM-based synthesis
-- **Image augmentation** – expands dataset via rotation, jitter, and perturbations
-
-Our image and text datasets were versioned as static snapshots on our Google Cloud Storage bucket.
-
-For our bug bite classifier, we built a vision-language model to construct paired image–text embeddings, and a classification head on top of that to convert that embedding space to our "bug bite" space. We experimented with two research-backed vision-language models: **CLIP** and **ViLT**. To fine-tune them for bug bite classification, we performed systematic hyperparameter sweeps to achieve not only high accuracy but also high definitiveness in its predictions. Our best-performing CLIP model reached a validation **94% accuracy** and **93% confidence on correct predictions**. Model weights and metadata were stored in *Weights & Biases*, which our vision-language model service uses to serve our best-performing model for inference.
+We built a vision-language model to construct paired image–text embeddings, and a classification head on top of that to convert that embedding space to our "bug bite" space. We experimented with two research-backed vision-language models: **CLIP** and **ViLT**. To fine-tune them for bug bite classification, we performed systematic hyperparameter sweeps to achieve not only high accuracy but also high definitiveness in its predictions. Our best-performing CLIP model reached a validation **94% accuracy** and **93% confidence on correct predictions**. Model weights and metadata were stored in *Weights & Biases*, which our vision-language model service uses to serve our best-performing model for inference.
 
 ## RAG Pipeline 🔍
 
@@ -97,7 +90,7 @@ TODO!
 
 ## Deployment & MLOps ☁️
 
-BiteFinder is deployed with a **modern MLOps tech stack** that lives largely within the GCP ecosystem:
+BiteFinder is deployed with a **modern MLOps tech stack** that lives mainly within the GCP ecosystem:
 
 - **Dockerized microservices** running on a Kubernetes cluster, capable of autoscaling and load balancing to meet demand
 - **Pulumi** for deployment infrastructure-as-code automation
