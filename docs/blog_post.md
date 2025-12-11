@@ -86,7 +86,7 @@ All relevant documents were chunked, embedded and loaded into *Pinecone*, which 
 
 ## Orchestration Pipeline 🧠
 
-TODO!
+The orchestrator service is the brain of BiteFinder. It has a deterministic hardcoded approach for the initial evaluation and classification of the image and an agent-based approach for all subsequent interactions. It uses **LangChain** to manage the agent, with tool access to the RAG, and the session state is stored in a **Firestore** database.
 
 ## Deployment & MLOps ☁️
 
