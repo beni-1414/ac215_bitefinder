@@ -80,6 +80,18 @@ The data for training the model comes from [Kaggle's Bug Bite Images dataset](#r
 
 We experimented with two research-backed vision-language architectures: **CLIP** and **ViLT**. To fine-tune them, we performed systematic hyperparameter sweeps to achieve not only high accuracy but also high definitiveness in its predictions. Our best-performing CLIP model reached a validation **94% accuracy** and **93% confidence on correct predictions**.
 
+## Retrieval-Augmented Generation (RAG) Pipeline 🧠🔍
+
+We also built a **RAG**, using **clinically reliable sources** including:
+
+
+- **Cleveland Clinic**
+- **National Library of Medicine (NLM)**
+- **UC Integrated Pest Management (UC IPM)**
+
+All relevant documents were chunked, embedded and loaded into **Pinecone**, which is consumed by the orchestrator. When the VL model classifies an image, the predicted bug type becomes the query key for the RAG pipeline. Through Pinecone, the system retrieves the top clinically aligned documents for that bug species, allowing the LLM to generate **context-aware explanations, differential considerations, and guidance**.
+
+
 ## Deployment & MLOps ☁️
 
 BiteFinder is deployed with a **modern MLOps tech stack** that lives largely within the GCP ecosystem:
