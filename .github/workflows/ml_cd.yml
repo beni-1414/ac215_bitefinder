@@ -1,8 +1,8 @@
 name: Auto-Deploy VL Model
 
 on:
-  schedule:
-    - cron: "0 0 * * *"   # Every day
+  # schedule:
+  #   - cron: "0 0 * * *"   # Every day
   workflow_dispatch: {}   # Manual trigger
 
 jobs:
